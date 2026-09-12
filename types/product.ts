@@ -1,7 +1,11 @@
 // types/product.ts
+
+// Stock status types
+export type StockStatus = 'in-stock' | 'low-stock' | 'out-of-stock';
+
 export interface StockLocation {
   storeName: string;
-  quantity: number;
+  status: StockStatus;
 }
 
 export interface Product {
@@ -16,15 +20,19 @@ export interface Product {
   stockByStore: StockLocation[];
   isNew?: boolean;
   isTrending?: boolean;
+  isPromo?: boolean;
+  createdAt?: string;
 }
 
 export interface CartItem {
   id: string;
+  productId: string;
   name: string;
   price: number;
   quantity: number;
-  size?: string;
+  size: string;
   image?: string;
+  store?: string;
 }
 
 export interface Store {
@@ -32,6 +40,37 @@ export interface Store {
   name: string;
   address: string;
   hours: string;
-  phone?: string;
+  phone: string;
   image?: string;
+  mapUrl?: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  icon?: string;
+}
+
+export interface FAQItem {
+  question: string;
+  answer: string;
+  category?: string;
+}
+
+export interface OrderDetails {
+  customerName?: string;
+  customerPhone?: string;
+  deliveryMethod: 'pickup' | 'delivery';
+  pickupStore?: string;
+  deliveryAddress?: string;
+  items: CartItem[];
+  totalPrice: number;
+}
+
+export interface FilterOptions {
+  category: string;
+  priceRange: [number, number];
+  sizes: string[];
+  sortBy: 'newest' | 'price-low' | 'price-high' | 'popular';
+  inStockOnly: boolean;
 }
