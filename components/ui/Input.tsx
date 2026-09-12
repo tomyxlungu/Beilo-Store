@@ -199,7 +199,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       padding: 0,
       margin: 0,
 
-      fontFamily: "'Comfortaa', sans-serif",
+      fontFamily: 'var(--font-family-base)',
       fontSize: sizeConfigs[size].fontSize,
       lineHeight: 1,
 

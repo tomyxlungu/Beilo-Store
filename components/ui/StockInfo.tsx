@@ -116,7 +116,7 @@ const StockInfo: React.FC<StockInfoProps> = ({
                 padding: 0,
                 cursor: isClickable ? 'pointer' : 'default',
                 color: store.status === 'out-of-stock' ? 'var(--moonlit-silver)' : 'var(--ironclad-grey)',
-                fontFamily: "'Comfortaa', sans-serif",
+                fontFamily: 'var(--font-family-base)',
                 textAlign: 'left',
                 width: '100%',
                 textDecoration: store.status === 'out-of-stock' ? 'line-through' : 'none',
