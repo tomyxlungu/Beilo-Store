@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { Loader2, type LucideIcon } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'disabled';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -41,7 +41,9 @@ const variantConfigs: Record<ButtonVariant, VariantStyles> = {
     base: {
       background: 'var(--charcoal-noir)',
       color: 'var(--canvas)',
-      border: '1.5px solid var(--charcoal-noir)',
+      borderWidth: '1.5px',
+      borderStyle: 'solid',
+      borderColor: 'var(--charcoal-noir)',
     },
     hover: {
       background: 'var(--ironclad-grey)',
@@ -64,7 +66,9 @@ const variantConfigs: Record<ButtonVariant, VariantStyles> = {
     base: {
       background: 'transparent',
       color: 'var(--charcoal-noir)',
-      border: '1.5px solid var(--charcoal-noir)',
+      borderWidth: '1.5px',
+      borderStyle: 'solid',
+      borderColor: 'var(--charcoal-noir)',
     },
     hover: {
       background: 'var(--charcoal-noir)',
@@ -85,7 +89,9 @@ const variantConfigs: Record<ButtonVariant, VariantStyles> = {
     base: {
       background: 'transparent',
       color: 'var(--ironclad-grey)',
-      border: '1.5px solid transparent',
+      borderWidth: '1.5px',
+      borderStyle: 'solid',
+      borderColor: 'transparent',
       paddingLeft: '6px',
       paddingRight: '6px',
     },
@@ -106,7 +112,9 @@ const variantConfigs: Record<ButtonVariant, VariantStyles> = {
     base: {
       background: 'var(--moonlit-silver)',
       color: 'var(--cloud-veil)',
-      border: '1.5px solid var(--moonlit-silver)',
+      borderWidth: '1.5px',
+      borderStyle: 'solid',
+      borderColor: 'var(--moonlit-silver)',
       cursor: 'not-allowed',
     },
     hover: {},
@@ -169,6 +177,9 @@ const Button: React.FC<ButtonProps> = ({
   const actualVariant = disabled ? 'disabled' : variant;
   const config = variantConfigs[actualVariant];
 
+  // Destructure style to remove 'border' shorthand
+  const { border, ...styleWithoutBorder } = style;
+
   const baseStyles: React.CSSProperties = {
     fontFamily: "'Comfortaa', sans-serif",
     fontWeight: 600,
@@ -200,8 +211,17 @@ const Button: React.FC<ButtonProps> = ({
     ...(isHovered && !disabled && !loading ? config.hover : {}),
     ...(isActive && !disabled && !loading ? config.active : {}),
     ...(disabled || loading ? config.disabled : {}),
-    ...style,
+    ...styleWithoutBorder,
   };
+
+  // If 'border' shorthand was provided, convert to individual properties
+  if (border !== undefined) {
+    const borderString = String(border);
+    const parts = borderString.split(' ');
+    if (parts.length >= 1) combinedStyles.borderWidth = parts[0];
+    if (parts.length >= 2) combinedStyles.borderStyle = parts[1];
+    if (parts.length >= 3) combinedStyles.borderColor = parts[2];
+  }
 
   const content = (
     <span style={{

@@ -2,8 +2,8 @@
 'use client';
 
 import React from 'react';
-import { MapPin, CheckCircle2, XCircle, Store } from 'lucide-react';
-import type { StockLocation } from '../../types/product';
+import { MapPin, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
+import type { StockLocation, StockStatus } from '../../types/product';
 
 interface StockInfoProps {
   stockByStore?: StockLocation[];
@@ -14,6 +14,24 @@ interface StockInfoProps {
   onStoreClick?: (storeName: string) => void;
   ariaLabel?: string;
 }
+
+const statusConfig: Record<StockStatus, { icon: React.ReactNode; color: string; label: string }> = {
+  'in-stock': {
+    icon: <CheckCircle2 size={12} />,
+    color: '#00cc66',
+    label: 'In Stock',
+  },
+  'low-stock': {
+    icon: <AlertTriangle size={12} />,
+    color: '#ff8800',
+    label: 'Low Stock',
+  },
+  'out-of-stock': {
+    icon: <XCircle size={12} />,
+    color: 'var(--moonlit-silver)',
+    label: 'Out of Stock',
+  },
+};
 
 const StockInfo: React.FC<StockInfoProps> = ({ 
   stockByStore = [],
@@ -26,41 +44,24 @@ const StockInfo: React.FC<StockInfoProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = React.useState<boolean>(showAll);
 
-  // Filter stores with stock (quantity > 0 means in stock)
-  const storesWithStock = stockByStore.filter(store => store.quantity > 0);
-  const storesOutOfStock = stockByStore.filter(store => store.quantity === 0);
+  const storesWithStock = stockByStore.filter(store => store.status !== 'out-of-stock');
+  const storesLowStock = stockByStore.filter(store => store.status === 'low-stock');
+  const storesOutOfStock = stockByStore.filter(store => store.status === 'out-of-stock');
 
-  // Determine display stores
-  const displayStores = isExpanded 
-    ? stockByStore 
-    : storesWithStock.slice(0, compact ? 1 : 2);
-  
+  const displayStores = isExpanded ? stockByStore : storesWithStock.slice(0, compact ? 1 : 2);
   const remainingStores = storesWithStock.length - (compact ? 1 : 2);
 
-  if (stockByStore.length === 0) {
-    return null;
-  }
+  if (stockByStore.length === 0) return null;
 
-  // If completely out of stock
   if (storesWithStock.length === 0) {
     return (
-      <div 
-        className={`stock-info stock-info-out ${className}`}
-        style={{
-          marginTop: compact ? '4px' : '8px',
-          fontSize: compact ? '11px' : '12px',
-          color: 'var(--ironclad-grey)',
-          ...style,
-        }}
-        role="status"
-        aria-label={ariaLabel}
-      >
-        <span style={{ 
-          display: 'inline-flex', 
-          alignItems: 'center', 
-          gap: '4px',
-          flexWrap: 'wrap',
-        }}>
+      <div className={`stock-info stock-info-out ${className}`} style={{
+        marginTop: compact ? '4px' : '8px',
+        fontSize: compact ? '11px' : '12px',
+        color: 'var(--ironclad-grey)',
+        ...style,
+      }} role="status" aria-label={ariaLabel}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
           <XCircle size={compact ? 11 : 12} style={{ color: 'var(--moonlit-silver)' }} />
           <span style={{ fontWeight: 600 }}>Out of Stock</span>
         </span>
@@ -69,17 +70,12 @@ const StockInfo: React.FC<StockInfoProps> = ({
   }
 
   return (
-    <div 
-      className={`stock-info ${className}`}
-      style={{
-        marginTop: compact ? '4px' : '8px',
-        fontSize: compact ? '11px' : '12px',
-        color: 'var(--ironclad-grey)',
-        ...style,
-      }}
-      role="status"
-      aria-label={ariaLabel}
-    >
+    <div className={`stock-info ${className}`} style={{
+      marginTop: compact ? '4px' : '8px',
+      fontSize: compact ? '11px' : '12px',
+      color: 'var(--ironclad-grey)',
+      ...style,
+    }} role="status" aria-label={ariaLabel}>
       {/* Quick summary */}
       <div style={{
         display: 'flex',
@@ -92,25 +88,17 @@ const StockInfo: React.FC<StockInfoProps> = ({
         <CheckCircle2 size={compact ? 11 : 12} style={{ color: '#00cc66' }} />
         <span>In Stock</span>
         {storesOutOfStock.length > 0 && (
-          <span style={{ 
-            fontSize: compact ? '10px' : '11px',
-            color: 'var(--urban-fog)',
-            fontWeight: 400,
-          }}>
+          <span style={{ fontSize: compact ? '10px' : '11px', color: 'var(--urban-fog)', fontWeight: 400 }}>
             ({storesWithStock.length} of {stockByStore.length} stores)
           </span>
         )}
       </div>
 
       {/* Store list */}
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: compact ? '3px' : '4px' 
-      }}>
-        {displayStores.map((store: StockLocation) => {
-          const isInStock = store.quantity > 0;
-          const isClickable = !!onStoreClick && isInStock;
+      <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? '3px' : '4px' }}>
+        {displayStores.map((store) => {
+          const config = statusConfig[store.status];
+          const isClickable = !!onStoreClick && store.status !== 'out-of-stock';
           
           return (
             <button
@@ -127,44 +115,28 @@ const StockInfo: React.FC<StockInfoProps> = ({
                 border: 'none',
                 padding: 0,
                 cursor: isClickable ? 'pointer' : 'default',
-                color: isInStock ? 'var(--ironclad-grey)' : 'var(--moonlit-silver)',
+                color: store.status === 'out-of-stock' ? 'var(--moonlit-silver)' : 'var(--ironclad-grey)',
                 fontFamily: "'Comfortaa', sans-serif",
                 textAlign: 'left',
                 width: '100%',
-                transition: 'opacity 0.2s ease',
-                textDecoration: isInStock ? 'none' : 'line-through',
-              }}
-              onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-                if (isClickable) {
-                  e.currentTarget.style.opacity = '0.7';
-                }
-              }}
-              onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-                if (isClickable) {
-                  e.currentTarget.style.opacity = '1';
-                }
+                textDecoration: store.status === 'out-of-stock' ? 'line-through' : 'none',
               }}
             >
-              {isInStock ? (
-                <CheckCircle2 size={compact ? 10 : 11} style={{ color: '#00cc66', flexShrink: 0 }} />
-              ) : (
-                <XCircle size={compact ? 10 : 11} style={{ color: 'var(--moonlit-silver)', flexShrink: 0 }} />
-              )}
+              <span style={{
+                width: compact ? '6px' : '8px',
+                height: compact ? '6px' : '8px',
+                borderRadius: '50%',
+                display: 'inline-block',
+                flexShrink: 0,
+                background: config.color,
+              }} />
               <MapPin size={compact ? 10 : 11} style={{ flexShrink: 0 }} />
-              <span style={{ 
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {store.storeName}
               </span>
-              {!isInStock && (
-                <span style={{ 
-                  fontSize: compact ? '9px' : '10px',
-                  whiteSpace: 'nowrap',
-                  fontWeight: 500,
-                }}>
-                  (Out)
+              {store.status === 'low-stock' && (
+                <span style={{ fontSize: compact ? '9px' : '10px', color: '#ff8800', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                  Low
                 </span>
               )}
             </button>
@@ -185,26 +157,29 @@ const StockInfo: React.FC<StockInfoProps> = ({
             fontFamily: "'Comfortaa', sans-serif",
             fontSize: compact ? '10px' : '11px',
             color: 'var(--urban-fog)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '2px',
-            transition: 'color 0.2s ease',
-          }}
-          onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-            e.currentTarget.style.color = 'var(--charcoal-noir)';
-          }}
-          onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-            e.currentTarget.style.color = 'var(--urban-fog)';
           }}
           aria-expanded={isExpanded}
         >
           {isExpanded ? 'Show less' : `+${remainingStores} more stores`}
         </button>
       )}
+
+      {/* Low stock warning */}
+      {storesLowStock.length > 0 && (
+        <div style={{
+          marginTop: compact ? '3px' : '4px',
+          fontSize: compact ? '9px' : '10px',
+          color: '#ff8800',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '3px',
+        }}>
+          <AlertTriangle size={compact ? 9 : 10} />
+          <span>Low stock in {storesLowStock.length} store{storesLowStock.length > 1 ? 's' : ''}</span>
+        </div>
+      )}
     </div>
   );
 };
 
-// Export types
-export type { StockInfoProps };
 export default StockInfo;
