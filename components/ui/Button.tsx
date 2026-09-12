@@ -181,7 +181,7 @@ const Button: React.FC<ButtonProps> = ({
   const { border, ...styleWithoutBorder } = style;
 
   const baseStyles: React.CSSProperties = {
-    fontFamily: "'Comfortaa', sans-serif",
+    fontFamily: 'var(--font-family-base)',
     fontWeight: 600,
     borderRadius: '30px',
     cursor: disabled || loading ? 'not-allowed' : 'pointer',

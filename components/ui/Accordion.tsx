@@ -48,7 +48,7 @@ const Accordion: React.FC<AccordionProps> = ({ items, allowMultiple = false }) =
                 border: 'none',
                 width: '100%',
                 cursor: 'pointer',
-                fontFamily: "'Comfortaa', sans-serif",
+                fontFamily: 'var(--font-family-base)',
                 color: 'var(--charcoal-noir)',
                 padding: '8px 0',
                 display: 'flex',

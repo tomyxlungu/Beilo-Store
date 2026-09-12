@@ -2,8 +2,6 @@
    BEILO Design System - Global Styles
    ============================================ */
 
-/* Font */
-@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 /* ============================================
@@ -39,7 +37,7 @@
   --header-height: 80px;
 
   /* Typography */
-  --font-family-base: 'Comfortaa', sans-serif;
+  --font-family-base: var(--font-comfortaa), 'Comfortaa', sans-serif;
 
   --font-size-xs: 12px;
   --font-size-sm: 13px;

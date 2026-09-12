@@ -197,7 +197,7 @@ const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
           border: 'none',
           padding: 0,
           textAlign: 'left',
-          fontFamily: "'Comfortaa', sans-serif",
+          fontFamily: 'var(--font-family-base)',
           color: 'var(--charcoal-noir)',
         }}
         onClick={onClick}

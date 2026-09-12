@@ -44,7 +44,7 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
             background: 'transparent',
             border: 'none',
             cursor: 'pointer',
-            fontFamily: "'Comfortaa', sans-serif",
+            fontFamily: 'var(--font-family-base)',
             whiteSpace: 'nowrap',
             flexShrink: 0,
           }}

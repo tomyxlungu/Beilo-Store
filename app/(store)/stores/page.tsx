@@ -14,7 +14,7 @@ export default function StoresPage() {
 
   return (
     <div style={{
-      fontFamily: "'Comfortaa', sans-serif",
+      fontFamily: 'var(--font-family-base)',
       background: 'var(--canvas)',
       color: 'var(--charcoal-noir)',
       minHeight: '100vh',
@@ -52,7 +52,7 @@ export default function StoresPage() {
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    fontFamily: "'Comfortaa', sans-serif",
+                    fontFamily: 'var(--font-family-base)',
                     textAlign: 'left',
                     transition: 'background 0.2s ease',
                   }}

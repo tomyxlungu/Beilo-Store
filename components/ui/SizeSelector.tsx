@@ -125,7 +125,7 @@ const SizeSelector: React.FC<SizeSelectorProps> = ({
 
   const getButtonStyles = (sizeOption: SizeOption, isSelected: boolean): React.CSSProperties => {
     const baseStyles: React.CSSProperties = {
-      fontFamily: "'Comfortaa', sans-serif",
+      fontFamily: 'var(--font-family-base)',
       cursor: disabled || sizeOption.disabled ? 'not-allowed' : 'pointer',
       display: 'inline-flex',
       alignItems: 'center',
