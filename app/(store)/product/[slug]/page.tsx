@@ -156,7 +156,7 @@ export default function ProductPage({ params }: PageProps) {
   const { slug } = use(params);
   const router = useRouter();
   const { addItem } = useCart();
-  const { has, toggle } = useWishlist();
+  const { has, toggle, isHydrated } = useWishlist();
 
   const product = useMemo(
     () => products.find((p) => p.slug === slug),
@@ -177,7 +177,7 @@ export default function ProductPage({ params }: PageProps) {
 
   if (!product) notFound();
 
-  const wishlisted = has(product.id);
+  const wishlisted = isHydrated && has(product.id);
 
   const gallery =
     product.images.length > 0

@@ -49,29 +49,33 @@ export function CartProvider({
 }: {
   children: ReactNode;
 }) {
-  const [items, setItems] = useState<CartItem[]>(() => {
-    if (typeof window === 'undefined') {
-      return [];
-    }
+  // Start empty so the first client render matches the
+  // server HTML, then hydrate from localStorage in an
+  // effect to avoid a hydration mismatch.
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
 
+  useEffect(() => {
     try {
       const savedCart = window.localStorage.getItem('cart');
 
-      return savedCart ? JSON.parse(savedCart) : [];
+      if (savedCart) {
+        // Sync from external store post-mount so hydration matches.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setItems(JSON.parse(savedCart));
+      }
     } catch (error) {
       console.error(
         'Failed to parse cart from localStorage:',
         error
       );
-
-      return [];
+    } finally {
+      setIsHydrated(true);
     }
-  });
-
-  const isHydrated = typeof window !== 'undefined';
+  }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    if (!isHydrated) {
       return;
     }
 
@@ -86,7 +90,7 @@ export function CartProvider({
         error
       );
     }
-  }, [items]);
+  }, [items, isHydrated]);
 
   const addItem = (
     item: AddItemData,

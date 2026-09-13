@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Globe, Images, Users } from 'lucide-react';
 
 /* ---------- Data ---------- */
 const promoBanner = {
@@ -15,27 +15,57 @@ const promoBanner = {
   bg: '#2B2B2B',
 };
 
-const lookCards = [
+const looks = [
   {
     id: '1',
-    title: 'Street essentials',
-    subtitle: 'Layered looks for the city',
+    label: 'STREET ESSENTIALS',
+    title: 'Layered looks for the city',
+    description:
+      'The everyday staples, styled for whatever the city throws at you.',
     image: '/products/beliloimg.avif',
     href: '/looks/street',
+    align: 'left' as const,
+    products: [
+      { name: 'Basic Tee', price: 250, image: '/categories/tees/shirt.jpg' },
+      { name: 'Straight Jeans', price: 450, image: '/categories/denim/Jeans.jpeg' },
+      { name: 'Sneakers', price: 850, image: '/categories/sneekers/shoe.jpeg' },
+      { name: 'Cap', price: 180, image: '/categories/caps/cap.jpeg' },
+      { name: 'Light Jacket', price: 650, image: '/categories/hoodies/hoodie.jpeg' },
+    ],
   },
   {
     id: '2',
-    title: 'Weekend casual',
-    subtitle: 'Relaxed fits & soft layers',
+    label: 'WEEKEND CASUAL',
+    title: 'Relaxed fits & soft layers',
+    description:
+      'Comfort meets style. Perfect for slow days, coffee runs and weekend plans.',
     image: '/products/cozy.jpeg',
     href: '/looks/weekend',
+    align: 'right' as const,
+    products: [
+      { name: 'Hoodie', price: 550, image: '/categories/hoodies/hoodie.jpeg' },
+      { name: 'Relaxed Trousers', price: 480, image: '/categories/cargo/166492517477861535.jpeg' },
+      { name: 'Sneakers', price: 850, image: '/categories/sneekers/shoe.jpeg' },
+      { name: 'Cap', price: 180, image: '/categories/caps/cap.jpeg' },
+      { name: 'Oversized Tee', price: 280, image: '/categories/tees/shirt.jpg' },
+    ],
   },
   {
     id: '3',
-    title: 'Urban layering',
-    subtitle: 'Denim, tees & outerwear',
+    label: 'URBAN LAYERING',
+    title: 'Denim, tees & outerwear',
+    description:
+      'Classic pieces. Modern layers. Built for the urban grind.',
     image: '/products/Wednesday.jpeg',
     href: '/looks/urban',
+    align: 'left' as const,
+    products: [
+      { name: 'Denim Jacket', price: 750, image: '/categories/denim/Jeans.jpeg' },
+      { name: 'Graphic Tee', price: 280, image: '/categories/tees/shirt.jpg' },
+      { name: 'Outerwear', price: 850, image: '/categories/hoodies/hoodie.jpeg' },
+      { name: 'Jeans', price: 450, image: '/categories/denim/Jeans.jpeg' },
+      { name: 'Sneakers', price: 850, image: '/categories/sneekers/shoe.jpeg' },
+    ],
   },
 ];
 
@@ -86,6 +116,17 @@ const categoryBlocks = [
   },
 ];
 
+const socialStats = {
+  source: 'Facebook',
+  sourceHandle: '@beilo.store',
+  href: 'https://facebook.com',
+  heading: 'Join our community',
+  stats: [
+    { id: 'followers', value: '98K', label: 'Followers', Icon: Users },
+    { id: 'posts', value: '4.3K', label: 'Posts', Icon: Images },
+  ],
+};
+
 const dealProducts = [
   {
     id: '1',
@@ -130,81 +171,164 @@ const dealProducts = [
 ];
 
 export default function HomeSections() {
-  const promoRef = useRef<HTMLDivElement>(null);
+  const catsRef = useRef<HTMLDivElement>(null);
+  const dealsRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const carousel = promoRef.current;
+  const scrollTrack = (
+    ref: React.RefObject<HTMLDivElement | null>,
+    dir: 1 | -1
+  ) => {
+    const el = ref.current;
 
-    if (!carousel) return;
+    if (!el) return;
 
-    const interval = setInterval(() => {
-      const slides =
-        carousel.querySelectorAll<HTMLElement>('.promo-slide');
-
-      if (!slides.length) return;
-
-      const currentScroll = carousel.scrollLeft;
-
-      const nextSlide = Array.from(slides).find(
-        (slide) => slide.offsetLeft > currentScroll + 10
-      );
-
-      if (nextSlide) {
-        carousel.scrollTo({
-          left: nextSlide.offsetLeft - carousel.offsetLeft,
-          behavior: 'smooth',
-        });
-      } else {
-        carousel.scrollTo({
-          left: 0,
-          behavior: 'smooth',
-        });
-      }
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, []);
+    el.scrollBy({
+      left: dir * el.clientWidth * 0.8,
+      behavior: 'smooth',
+    });
+  };
 
   return (
     <div className="home-sections">
-      {/* ===== PROMO BANNER + LOOK CARDS (IKEA style) ===== */}
-      {/* ===== PROMO CAROUSEL (minimal) ===== */}
+      {/* ===== LOOK SECTIONS (editorial hero) ===== */}
+      {looks.map((look) => (
+        <section
+          key={look.id}
+          className="look-section"
+        >
+          <div className="look-section-bg">
+            <Image
+              src={look.image}
+              alt={look.title}
+              fill
+              sizes="100vw"
+              className="look-section-bg-img"
+              priority={look.id === '1'}
+            />
+            <div className="look-section-bg-overlay" />
+          </div>
+
+          <div
+            className={`look-section-content ${look.align === 'right' ? 'look-section-content--reverse' : ''}`}
+          >
+            <div className="look-section-text">
+              <p className="look-section-label">
+                {look.label}
+              </p>
+              <h2 className="look-section-title">
+                {look.title}
+              </h2>
+              <p className="look-section-desc">
+                {look.description}
+              </p>
+              <Link
+                href={look.href}
+                className="look-section-cta"
+              >
+                SHOP THE LOOK
+                <span className="look-section-cta-arrow">→</span>
+              </Link>
+            </div>
+
+            <div className="look-section-products">
+              {look.products.map((product) => (
+                <Link
+                  key={product.name}
+                  href={`/shop?search=${encodeURIComponent(product.name)}`}
+                  className="look-product-card"
+                >
+                  <div className="look-product-card-img">
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      fill
+                      sizes="120px"
+                      className="object-cover"
+                    />
+                  </div>
+                  <p className="look-product-card-name">
+                    {product.name}
+                  </p>
+                  <p className="look-product-card-price">
+                    K{product.price}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      ))}
+
+      {/* ===== SOCIAL PROOF (Facebook community) ===== */}
       <section className="home-section">
-        <div ref={promoRef} className="promo-carousel">
-          {lookCards.map((card) => (
-            <Link
-              key={card.id}
-              href={card.href}
-              className="promo-slide"
-            >
-              <div className="promo-slide-image-wrap">
-                <Image
-                  src={card.image}
-                  alt={card.title}
-                  fill
-                  sizes="(max-width: 768px) 90vw, 400px"
-                  className="promo-slide-image"
-                  priority={card.id === '1'}
-                />
-              </div>
+        <div className="social-proof">
+          <div className="social-proof-brand">
+            <span className="social-proof-icon">
+              <Globe size={20} strokeWidth={2} />
+            </span>
+            <div>
+              <p className="social-proof-heading">
+                {socialStats.heading}
+              </p>
+              <p className="social-proof-sub">
+                {socialStats.source} · {socialStats.sourceHandle}
+              </p>
+            </div>
+          </div>
 
-              <div className="promo-slide-overlay">
-                <p className="promo-slide-label">
-                  {card.subtitle}
-                </p>
-
-                <h3 className="promo-slide-title">
-                  {card.title}
-                </h3>
+          <div className="social-proof-stats">
+            {socialStats.stats.map(({ id, value, label, Icon }) => (
+              <div key={id} className="social-proof-stat">
+                <span className="social-proof-stat-icon">
+                  <Icon size={16} strokeWidth={2} />
+                </span>
+                <span className="social-proof-stat-value">{value}</span>
+                <span className="social-proof-stat-label">{label}</span>
               </div>
-            </Link>
-          ))}
+            ))}
+          </div>
+
+          <a
+            href={socialStats.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-secondary social-proof-cta"
+          >
+            Follow us
+            <ArrowRight size={16} strokeWidth={2.5} />
+          </a>
         </div>
       </section>
 
-      {/* ===== CATEGORY BLOCKS (Amazon style 2x2) ===== */}
+      {/* ===== CATEGORY SLIDER ===== */}
       <section className="home-section">
-        <div className="category-blocks-grid">
+        <div className="section-header">
+          <h2 className="section-title">
+            Shop by category
+          </h2>
+
+          <div className="slider-nav">
+            <button
+              type="button"
+              className="slider-btn"
+              onClick={() => scrollTrack(catsRef, -1)}
+              aria-label="Scroll categories left"
+            >
+              <ChevronLeft size={18} strokeWidth={2.5} />
+            </button>
+
+            <button
+              type="button"
+              className="slider-btn"
+              onClick={() => scrollTrack(catsRef, 1)}
+              aria-label="Scroll categories right"
+            >
+              <ChevronRight size={18} strokeWidth={2.5} />
+            </button>
+          </div>
+        </div>
+
+        <div ref={catsRef} className="category-blocks-grid">
           {categoryBlocks.map((block) => (
             <div key={block.id} className="category-block">
               <h3 className="category-block-title">
@@ -246,26 +370,48 @@ export default function HomeSections() {
         </div>
       </section>
 
-      {/* ===== DEALS STRIP ===== */}
+      {/* ===== DEALS SLIDER ===== */}
       <section className="home-section">
         <div className="section-header">
           <h2 className="section-title">
             Deals for you
           </h2>
 
-          <Link
-            href="/shop?maxPrice=3500"
-            className="section-cta"
-          >
-            See all
-            <ArrowRight
-              size={16}
-              strokeWidth={2.5}
-            />
-          </Link>
+          <div className="section-header-actions">
+            <div className="slider-nav">
+              <button
+                type="button"
+                className="slider-btn"
+                onClick={() => scrollTrack(dealsRef, -1)}
+                aria-label="Scroll deals left"
+              >
+                <ChevronLeft size={18} strokeWidth={2.5} />
+              </button>
+
+              <button
+                type="button"
+                className="slider-btn"
+                onClick={() => scrollTrack(dealsRef, 1)}
+                aria-label="Scroll deals right"
+              >
+                <ChevronRight size={18} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            <Link
+              href="/shop?maxPrice=3500"
+              className="section-cta"
+            >
+              See all
+              <ArrowRight
+                size={16}
+                strokeWidth={2.5}
+              />
+            </Link>
+          </div>
         </div>
 
-        <div className="deals-scroll">
+        <div ref={dealsRef} className="deals-scroll">
           {dealProducts.map((product) => (
             <Link
               key={product.id}

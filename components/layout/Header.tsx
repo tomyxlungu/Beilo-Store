@@ -61,7 +61,7 @@ export default function Header() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const { totalItems } = useCart();
+  const { totalItems, isHydrated } = useCart();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] =
@@ -470,14 +470,15 @@ export default function Header() {
             <Link
               href="/cart"
               className="cart-button"
-              aria-label={`Shopping cart with ${totalItems} items`}
+              aria-label={`Shopping cart with ${isHydrated ? totalItems : 0} items`}
+              suppressHydrationWarning
             >
               <ShoppingBag
                 size={24}
                 strokeWidth={2}
               />
 
-              {totalItems > 0 && (
+              {isHydrated && totalItems > 0 && (
                 <span className="cart-count">
                   {totalItems > 99
                     ? '99+'

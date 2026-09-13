@@ -35,8 +35,8 @@ export default function ProductCard({
   product,
   onAddToCart,
 }: ProductCardProps) {
-  const { has, toggle } = useWishlist();
-  const wishlisted = has(product.id);
+  const { has, toggle, isHydrated } = useWishlist();
+  const wishlisted = isHydrated && has(product.id);
   const [imgSrc, setImgSrc] = useState(
     product.images[0] ?? resolveFallback(product)
   );
