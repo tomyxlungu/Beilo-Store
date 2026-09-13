@@ -13,6 +13,7 @@ const STORAGE_KEY = 'beilo-wishlist';
 interface WishlistContextType {
   ids: string[];
   totalItems: number;
+  isHydrated: boolean;
   has: (id: string) => boolean;
   toggle: (id: string) => void;
   clear: () => void;
@@ -39,9 +40,24 @@ export function WishlistProvider({
 }: {
   children: ReactNode;
 }) {
-  const [ids, setIds] = useState<string[]>(load);
+  // Start empty so the first client render matches the
+  // server HTML, then hydrate from localStorage in an
+  // effect to avoid a hydration mismatch.
+  const [ids, setIds] = useState<string[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
+    // Sync from external store post-mount so hydration matches.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIds(load());
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
     try {
       window.localStorage.setItem(
         STORAGE_KEY,
@@ -50,7 +66,7 @@ export function WishlistProvider({
     } catch {
       /* storage unavailable — wishlist stays in memory */
     }
-  }, [ids]);
+  }, [ids, isHydrated]);
 
   const has = (id: string) => ids.includes(id);
 
@@ -69,6 +85,7 @@ export function WishlistProvider({
       value={{
         ids,
         totalItems: ids.length,
+        isHydrated,
         has,
         toggle,
         clear,
