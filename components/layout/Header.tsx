@@ -478,13 +478,15 @@ export default function Header() {
                 strokeWidth={2}
               />
 
-              {isHydrated && totalItems > 0 && (
-                <span className="cart-count">
-                  {totalItems > 99
-                    ? '99+'
-                    : totalItems}
-                </span>
-              )}
+              <span
+                className="cart-count"
+                data-visible={isHydrated && totalItems > 0 ? 'true' : undefined}
+                suppressHydrationWarning
+              >
+                {isHydrated && totalItems > 99
+                  ? '99+'
+                  : totalItems || ''}
+              </span>
             </Link>
 
             {/* WHATSAPP */}

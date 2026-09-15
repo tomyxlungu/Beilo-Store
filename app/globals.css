@@ -1912,7 +1912,7 @@ textarea {
   top: 1px;
   right: 0;
 
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
 
@@ -1932,6 +1932,10 @@ textarea {
   font-weight: 700;
 
   line-height: 1;
+}
+
+.cart-count[data-visible="true"] {
+  display: flex;
 }
 
 /* ============================================
