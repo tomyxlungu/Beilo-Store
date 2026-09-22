@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Fragment } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import {
   Search,
@@ -11,6 +11,7 @@ import {
   Truck,
   CheckCircle,
   XCircle,
+  RefreshCw,
 } from 'lucide-react';
 import Input from '@/components/ui/Input';
 
@@ -159,10 +160,20 @@ export default function AdminOrders() {
   return (
     <div className="admin-page">
       <div className="admin-page-header">
-        <h1>Orders</h1>
-        <p className="admin-page-subtitle">
-          {filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''}
-        </p>
+        <div>
+          <h1>Orders</h1>
+          <p className="admin-page-subtitle">
+            {filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => fetchOrders()}
+          className="admin-filter-select"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+        >
+          <RefreshCw size={14} /> Refresh
+        </button>
       </div>
 
       <div className="admin-stats-grid" style={{ marginBottom: '24px' }}>
@@ -238,8 +249,8 @@ export default function AdminOrders() {
               </tr>
             ) : (
               paginatedOrders.map((order) => (
-                <>
-                  <tr key={order.id}>
+                <Fragment key={order.id}>
+                  <tr>
                     <td className="admin-order-id">{order.code || order.id.slice(0, 8)}</td>
                     <td>
                       <div>
@@ -290,7 +301,7 @@ export default function AdminOrders() {
                     </td>
                   </tr>
                   {expandedOrder === order.id && (
-                    <tr key={order.id + '-detail'}>
+                    <tr>
                       <td colSpan={7} style={{ padding: '16px', background: 'var(--cloud-veil)' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                           <div>
@@ -312,7 +323,7 @@ export default function AdminOrders() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))
             )}
           </tbody>

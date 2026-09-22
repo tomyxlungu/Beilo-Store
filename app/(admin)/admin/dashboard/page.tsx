@@ -25,12 +25,12 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
 };
 
 function formatCurrency(ngwee: number): string {
-  const kwacha = ngwee / 100;
-  return 'K ' + kwacha.toLocaleString('en-ZM', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const kwacha = (Number.isFinite(ngwee) ? ngwee : 0) / 100;
+  return 'K ' + kwacha.toLocaleString('en-ZM', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
 function formatCurrencyFull(ngwee: number): string {
-  const kwacha = ngwee / 100;
+  const kwacha = (Number.isFinite(ngwee) ? ngwee : 0) / 100;
   return 'K ' + kwacha.toLocaleString('en-ZM', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
@@ -81,10 +81,11 @@ function SalesChart({ data }: { data: { date: string; total: number }[] }) {
   const areaPath = linePath + ` L ${points[points.length - 1].x} ${padding.top + chartH} L ${points[0].x} ${padding.top + chartH} Z`;
 
   const ticks = 5;
+  // Axis is in Kwacha (DB stores ngwee) so labels match the K tooltip.
   const yTicks = Array.from({ length: ticks }, (_, i) => {
-    const val = (max / ticks) * (i + 1);
-    const y = padding.top + chartH - (val / max) * chartH;
-    return { val, y };
+    const valKwacha = (max / 100 / ticks) * (i + 1);
+    const y = padding.top + chartH - ((valKwacha * 100) / max) * chartH;
+    return { valKwacha, y };
   });
 
   const peak = points.reduce((a, b) => (b.total > a.total ? b : a), points[0]);
@@ -92,7 +93,7 @@ function SalesChart({ data }: { data: { date: string; total: number }[] }) {
   const peakValid = !isNaN(peakDate.getTime());
   const peakLabel = peakValid ? peakDate.toLocaleDateString('en-ZM', { month: 'short', day: 'numeric' }).toUpperCase() : '';
   const peakKwacha = peak.total / 100;
-  const peakValueLabel = peakKwacha >= 1000 ? `$${(peakKwacha / 1000).toFixed(2)}` : `$${peakKwacha.toFixed(0)}`;
+  const peakValueLabel = `K ${peakKwacha.toLocaleString('en-ZM', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
   const peakX = Number.isFinite(peak.x) ? peak.x : padding.left;
   const peakY = Number.isFinite(peak.y) ? peak.y : padding.top + chartH;
 
@@ -114,7 +115,7 @@ function SalesChart({ data }: { data: { date: string; total: number }[] }) {
         <g key={i}>
           <line x1={padding.left} y1={t.y} x2={w - padding.right} y2={t.y} stroke="#E0E0E0" strokeWidth="0.5" strokeDasharray="4,4" />
           <text x={padding.left - 8} y={t.y + 4} textAnchor="end" fontSize="10" fill="#565656">
-            {t.val >= 1000 ? `${(t.val / 1000).toFixed(0)}K` : t.val.toFixed(0)}
+            {t.valKwacha >= 1000 ? `${(t.valKwacha / 1000).toFixed(1)}K` : t.valKwacha.toFixed(0)}
           </text>
         </g>
       ))}

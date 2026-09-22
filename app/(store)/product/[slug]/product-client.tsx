@@ -132,7 +132,11 @@ export default function ProductClient({ product, relatedProducts }: ProductClien
   const mainSrc = imgSrc ?? gallery[activeImage];
   const { rating, count } = productRating(product.slug);
 
-  const soldOut = product.stockByStore.every((stock) => stock.status === 'out-of-stock');
+  const soldOut =
+    product.stockByStore.length > 0 &&
+    product.stockByStore.every((stock) => stock.status === 'out-of-stock');
+
+  const requiresSize = product.sizes.length > 0;
 
   const handleImageError = () => {
     const fallback = CATEGORY_FALLBACKS[product.category] ?? '/products/cozy.jpeg';
@@ -157,7 +161,7 @@ export default function ProductClient({ product, relatedProducts }: ProductClien
   });
 
   const handleAdd = () => {
-    if (!selectedSize) {
+    if (requiresSize && !selectedSize) {
       setSizeError('Please select a size first');
       return;
     }
@@ -166,7 +170,7 @@ export default function ProductClient({ product, relatedProducts }: ProductClien
   };
 
   const handleBuyNow = () => {
-    if (!selectedSize) {
+    if (requiresSize && !selectedSize) {
       setSizeError('Please select a size first');
       return;
     }
@@ -296,15 +300,17 @@ export default function ProductClient({ product, relatedProducts }: ProductClien
           <p className="pdp-price">K {product.price.toLocaleString()}</p>
           <p className="pdp-description">{product.description}</p>
 
-          <SizeSelector
-            sizes={product.sizes}
-            selectedSize={selectedSize}
-            onSelect={(size) => { setSelectedSize(size); setSizeError(''); }}
-            label="Select Size"
-            required
-            error={sizeError}
-            showSelected={false}
-          />
+          {requiresSize && (
+            <SizeSelector
+              sizes={product.sizes}
+              selectedSize={selectedSize}
+              onSelect={(size) => { setSelectedSize(size); setSizeError(''); }}
+              label="Select Size"
+              required
+              error={sizeError}
+              showSelected={false}
+            />
+          )}
 
           <div className="pdp-qty-row">
             <div className="pdp-qty" role="group" aria-label="Quantity">
