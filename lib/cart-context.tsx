@@ -7,6 +7,7 @@ import React, {
   useEffect,
   ReactNode,
 } from 'react';
+import { trackEvent } from '@/lib/analytics';
 
 interface CartItem {
   id: string;
@@ -96,8 +97,7 @@ export function CartProvider({
     item: AddItemData,
     quantity = 1
   ) => {
-    setItems((prevItems) => {
-      const existingItem = prevItems.find(
+    setItems((prevItems) => {      const existingItem = prevItems.find(
         (existing) =>
           existing.id === item.id &&
           existing.size === item.size
@@ -123,6 +123,15 @@ export function CartProvider({
         },
       ];
     });
+
+    try {
+      trackEvent('add_to_bag', {
+        product_id: item.id,
+        metadata: { name: item.name, size: item.size, price: item.price, quantity },
+      });
+    } catch {
+      /* analytics must never break the cart */
+    }
   };
 
   const removeItem = (

@@ -2,6 +2,7 @@
 import { createServerSupabase } from '@/lib/supabase/server';
 import { PRODUCT_SELECT_SIMPLE, mapProducts } from '@/lib/supabase/store-mapper';
 import HomeSections from '@/components/home/HomeSections';
+import TrackView from '@/components/analytics/TrackView';
 import Link from 'next/link';
 
 export default async function HomePage() {
@@ -74,6 +75,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <TrackView type="page_view" metadata={{ page: 'home' }} />
       <div className="mobile-shop-cta">
         <Link href="/shop" className="btn btn-primary">Shop Now</Link>
       </div>

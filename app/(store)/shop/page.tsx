@@ -2,6 +2,7 @@
 import { createServerSupabase } from '@/lib/supabase/server';
 import { PRODUCT_SELECT, mapProducts } from '@/lib/supabase/store-mapper';
 import ShopClient from './shop-client';
+import TrackView from '@/components/analytics/TrackView';
 import { Product } from '@/types/product';
 
 export default async function ShopPage() {
@@ -21,9 +22,12 @@ export default async function ShopPage() {
   const mapped: Product[] = mapProducts(products ?? []);
 
   return (
-    <ShopClient
-      initialProducts={mapped}
-      categories={categories?.map(c => c.name) ?? []}
-    />
+    <>
+      <TrackView type="page_view" metadata={{ page: 'shop' }} />
+      <ShopClient
+        initialProducts={mapped}
+        categories={categories?.map(c => c.name) ?? []}
+      />
+    </>
   );
 }

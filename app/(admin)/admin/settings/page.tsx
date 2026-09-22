@@ -16,33 +16,83 @@ export default function AdminSettings() {
   const [storeDescription, setStoreDescription] = useState('Zambia\'s online fashion destination');
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
   const [email, setEmail] = useState('');
 
   useEffect(() => {
-    async function loadSession() {
+    async function load() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.email) {
         setEmail(session.user.email);
       }
+      if (!session) {
+        setFetching(false);
+        return;
+      }
+      try {
+        const res = await fetch('/api/admin/settings', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const s = data.settings || {};
+          if (s.store_name) setStoreName(typeof s.store_name === 'string' ? s.store_name : s.store_name.value ?? 'BEILO');
+          if (s.store_description) setStoreDescription(typeof s.store_description === 'string' ? s.store_description : s.store_description.value ?? '');
+          if (s.whatsapp_number) setWhatsappNumber(typeof s.whatsapp_number === 'string' ? s.whatsapp_number : s.whatsapp_number.value ?? '');
+        }
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+      } finally {
+        setFetching(false);
+      }
     }
-    loadSession();
+    load();
   }, []);
+
+  async function saveSetting(key: string, value: string) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+    const res = await fetch('/api/admin/settings', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ key, value }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to save');
+    }
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setSaved(false);
+    setError('');
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await saveSetting('store_name', storeName);
+      await saveSetting('store_description', storeDescription);
+      await saveSetting('whatsapp_number', whatsappNumber);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch {
-      alert('Failed to save settings');
+    } catch (err: any) {
+      setError(err.message || 'Failed to save settings');
     } finally {
       setLoading(false);
     }
+  }
+
+  if (fetching) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
+        <div className="spinner" />
+      </div>
+    );
   }
 
   return (
@@ -53,6 +103,9 @@ export default function AdminSettings() {
 
       <div style={{ maxWidth: '640px' }}>
         <form onSubmit={handleSave}>
+          {error && (
+            <div className="admin-login-error" style={{ marginBottom: '16px' }}>{error}</div>
+          )}
           <div className="admin-section" style={{ marginBottom: '24px' }}>
             <div className="admin-section-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

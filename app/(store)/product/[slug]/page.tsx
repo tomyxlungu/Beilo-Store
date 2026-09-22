@@ -2,6 +2,7 @@
 import { createServerSupabase } from '@/lib/supabase/server';
 import { PRODUCT_SELECT, mapProduct } from '@/lib/supabase/store-mapper';
 import ProductClient from './product-client';
+import TrackView from '@/components/analytics/TrackView';
 import { notFound } from 'next/navigation';
 
 interface PageProps {
@@ -31,9 +32,12 @@ export default async function ProductPage({ params }: PageProps) {
     .limit(6);
 
   return (
-    <ProductClient
-      product={mapProduct(product)}
-      relatedProducts={(relatedProducts ?? []).map(mapProduct)}
-    />
+    <>
+      <TrackView type="product_view" productId={product.id} metadata={{ slug }} />
+      <ProductClient
+        product={mapProduct(product)}
+        relatedProducts={(relatedProducts ?? []).map(mapProduct)}
+      />
+    </>
   );
 }

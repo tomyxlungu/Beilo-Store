@@ -191,26 +191,87 @@ function DonutChart({ segments, total }: { segments: { label: string; value: num
 }
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({ totalProducts: 0, totalOrders: 0, totalRevenue: 0, activeStaff: 0, totalCustomers: 0 });
+  const [stats, setStats] = useState({
+    totalProducts: 0, totalOrders: 0, totalRevenue: 0,
+    activeStaff: 0, totalCustomers: 0,
+    revenueTrend: '—', revenueUp: true,
+    ordersTrend: '—', ordersUp: true,
+    customersTrend: '—', customersUp: true,
+    newProducts: 0,
+  });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
   const [topProducts, setTopProducts] = useState<any[]>([]);
   const [salesData, setSalesData] = useState<{ date: string; total: number }[]>([]);
+  const [segments, setSegments] = useState<{ label: string; value: number; color: string }[]>([]);
   const [loading, setLoading] = useState(true);
+
+  function pctChange(cur: number, prev: number): { text: string; up: boolean } {
+    if (prev <= 0) return { text: cur > 0 ? 'new' : '—', up: true };
+    const pct = ((cur - prev) / prev) * 100;
+    return { text: `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`, up: pct >= 0 };
+  }
 
   const fetchStats = useCallback(async () => {
     try {
+      const now = new Date();
+      const d30 = new Date(now); d30.setDate(d30.getDate() - 30);
+      const d60 = new Date(now); d60.setDate(d60.getDate() - 60);
+      const iso30 = d30.toISOString();
+      const iso60 = d60.toISOString();
+
       const { count: productsCount } = await supabase
         .from('products').select('*', { count: 'exact', head: true });
+
+      const { count: newProductsCount } = await supabase
+        .from('products').select('*', { count: 'exact', head: true })
+        .gte('created_at', iso30);
 
       const { count: ordersCount } = await supabase
         .from('orders').select('*', { count: 'exact', head: true });
 
-      const { data: orders } = await supabase
-        .from('orders').select('total_minor, created_at, status')
-        .order('created_at', { ascending: false }).limit(50);
+      // All order totals + dates for revenue, trends, chart, segments
+      const { data: allOrders } = await supabase
+        .from('orders')
+        .select('total_minor, created_at, customer_phone, status')
+        .order('created_at', { ascending: false })
+        .limit(500);
 
-      const totalRevenue = orders?.reduce((sum, o) => sum + (o.total_minor || 0), 0) || 0;
+      const list = allOrders ?? [];
+      let revCur = 0, revPrev = 0, ordCur = 0, ordPrev = 0;
+      const phonesCur = new Set<string>();
+      const phonesPrev = new Set<string>();
+      const ordersPerPhone = new Map<string, number>();
+      const salesByDate = new Map<string, number>();
+
+      for (const o of list) {
+        const total = o.total_minor || 0;
+        const created = o.created_at || '';
+        const inCur = created >= iso30;
+        const inPrev = created >= iso60 && created < iso30;
+
+        if (inCur) {
+          revCur += total; ordCur += 1;
+          if (o.customer_phone) phonesCur.add(o.customer_phone);
+        } else if (inPrev) {
+          revPrev += total; ordPrev += 1;
+          if (o.customer_phone) phonesPrev.add(o.customer_phone);
+        }
+
+        if (o.customer_phone) {
+          ordersPerPhone.set(o.customer_phone, (ordersPerPhone.get(o.customer_phone) || 0) + 1);
+        }
+
+        if (created) {
+          const date = created.split('T')[0];
+          if (date) salesByDate.set(date, (salesByDate.get(date) || 0) + total);
+        }
+      }
+
+      const totalRevenue = list.reduce((s, o) => s + (o.total_minor || 0), 0);
+      const rev = pctChange(revCur, revPrev);
+      const ord = pctChange(ordCur, ordPrev);
+      const cust = pctChange(phonesCur.size, phonesPrev.size);
 
       const { data: recentOrdersData } = await supabase
         .from('orders')
@@ -241,9 +302,6 @@ export default function AdminDashboard() {
       const { count: staffCount } = await supabase
         .from('users').select('*', { count: 'exact', head: true }).eq('active', true);
 
-      const { count: customersCount } = await supabase
-        .from('customers').select('*', { count: 'exact', head: true });
-
       const { data: productImages } = await supabase
         .from('products').select('name, images').limit(100);
       const imageByName = new Map<string, string>();
@@ -267,25 +325,39 @@ export default function AdminDashboard() {
       const topProductsList = Array.from(productMap.values())
         .sort((a, b) => b.revenue - a.revenue).slice(0, 5);
 
-      // Sales chart data (group by date, skip rows without a valid date)
-      const salesByDate = new Map<string, number>();
-      for (const o of orders ?? []) {
-        if (!o.created_at) continue;
-        const date = o.created_at.split('T')[0];
-        if (!date) continue;
-        salesByDate.set(date, (salesByDate.get(date) || 0) + (o.total_minor || 0));
-      }
       const salesChart = Array.from(salesByDate.entries())
         .map(([date, total]) => ({ date, total }))
-        .sort((a, b) => a.date.localeCompare(b.date));
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(-30);
+
+      // Real customer segments from order frequency per phone
+      let newC = 0, retC = 0, loyalC = 0;
+      for (const n of ordersPerPhone.values()) {
+        if (n <= 1) newC += 1;
+        else if (n === 2) retC += 1;
+        else loyalC += 1;
+      }
+      const segTotal = newC + retC + loyalC;
+      const realSegments = segTotal > 0
+        ? [
+            { label: 'Returning', value: retC, color: '#2563eb' },
+            { label: 'New Customers', value: newC, color: '#059669' },
+            { label: 'Loyal (VIP)', value: loyalC, color: '#f59e0b' },
+          ]
+        : [];
 
       setStats({
         totalProducts: productsCount || 0,
         totalOrders: ordersCount || 0,
         totalRevenue,
         activeStaff: staffCount || 0,
-        totalCustomers: customersCount || 0,
+        totalCustomers: segTotal,
+        revenueTrend: rev.text, revenueUp: rev.up,
+        ordersTrend: ord.text, ordersUp: ord.up,
+        customersTrend: cust.text, customersUp: cust.up,
+        newProducts: newProductsCount || 0,
       });
+      setSegments(realSegments);
       setRecentOrders(recentOrdersData || []);
       setLowStockProducts(lowStockItems);
       setTopProducts(topProductsList);
@@ -308,19 +380,13 @@ export default function AdminDashboard() {
   }
 
   const kpiCards = [
-    { label: 'Total Revenue', value: formatCurrency(stats.totalRevenue), trend: '18.6%', up: true, icon: DollarSign, iconBg: '#d1fae5', iconColor: '#059669' },
-    { label: 'Orders', value: stats.totalOrders.toLocaleString(), trend: '12.4%', up: true, icon: ShoppingCart, iconBg: '#dbeafe', iconColor: '#2563eb' },
-    { label: 'Customers', value: (stats.totalCustomers || stats.activeStaff).toLocaleString(), trend: '9.2%', up: true, icon: Users, iconBg: '#ede9fe', iconColor: '#7c3aed' },
-    { label: 'Conversion Rate', value: '3.42%', trend: '6.7%', up: true, icon: Package, iconBg: '#fef3c7', iconColor: '#d97706' },
+    { label: 'Total Revenue', value: formatCurrency(stats.totalRevenue), trend: stats.revenueTrend, up: stats.revenueUp, icon: DollarSign, iconBg: '#d1fae5', iconColor: '#059669' },
+    { label: 'Orders', value: stats.totalOrders.toLocaleString(), trend: stats.ordersTrend, up: stats.ordersUp, icon: ShoppingCart, iconBg: '#dbeafe', iconColor: '#2563eb' },
+    { label: 'Customers', value: stats.totalCustomers.toLocaleString(), trend: stats.customersTrend, up: stats.customersUp, icon: Users, iconBg: '#ede9fe', iconColor: '#7c3aed' },
+    { label: 'New Products (30d)', value: stats.newProducts.toLocaleString(), trend: `${stats.totalProducts} total`, up: true, icon: Package, iconBg: '#fef3c7', iconColor: '#d97706' },
   ];
 
-  const totalCust = stats.totalCustomers || 100;
-  const customerSegments = [
-    { label: 'Returning', value: Math.round(totalCust * 0.45), color: '#2563eb' },
-    { label: 'New Customers', value: Math.round(totalCust * 0.35), color: '#059669' },
-    { label: 'Loyal (VIP)', value: Math.max(1, totalCust - Math.round(totalCust * 0.45) - Math.round(totalCust * 0.35)), color: '#f59e0b' },
-  ];
-  const segmentTotal = customerSegments.reduce((s, seg) => s + seg.value, 0);
+  const segmentTotal = segments.reduce((s, seg) => s + seg.value, 0);
 
   return (
     <div className="admin-dashboard">
@@ -349,8 +415,8 @@ export default function AdminDashboard() {
           <div className="admin-card-header">
             <div>
               <h3 className="admin-card-title admin-card-title-upper">Sales Overview</h3>
-              <p className="admin-card-subtitle">{formatCurrency(stats.totalRevenue)} <span className="admin-card-trend up">▲ 18.6%</span></p>
-              <p className="admin-card-vs">vs May 12 – Apr 11, 2024</p>
+              <p className="admin-card-subtitle">{formatCurrency(stats.totalRevenue)} <span className={`admin-card-trend ${stats.revenueUp ? 'up' : 'down'}`}>{stats.revenueUp ? '▲' : '▼'} {stats.revenueTrend}</span></p>
+              <p className="admin-card-vs">vs previous 30 days</p>
             </div>
             <span className="admin-card-badge">Daily ⌄</span>
           </div>
@@ -459,7 +525,11 @@ export default function AdminDashboard() {
             <h3 className="admin-card-title">Customer Segments</h3>
           </div>
           <div className="admin-segments-body">
-            <DonutChart segments={customerSegments} total={segmentTotal} />
+            {segments.length === 0 ? (
+              <p style={{ padding: '20px', textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>No customer data yet</p>
+            ) : (
+              <DonutChart segments={segments} total={segmentTotal} />
+            )}
           </div>
         </div>
       </div>

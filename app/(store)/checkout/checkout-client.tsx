@@ -16,6 +16,7 @@ import {
   sendWhatsAppOrder,
 } from '@/lib/whatsapp';
 import { saveOrder } from '@/lib/orders';
+import { trackEvent } from '@/lib/analytics';
 import { getProfile, getDefaultStore } from '@/lib/preferences';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -132,6 +133,15 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
     });
 
     sendWhatsAppOrder(BEILO_WHATSAPP, message);
+
+    trackEvent('whatsapp_checkout', {
+      metadata: {
+        total_minor: Math.round(total * 100),
+        item_count: totalItems,
+        delivery_method: deliveryMethod,
+        store: deliveryMethod === 'pickup' ? selectedStore : undefined,
+      },
+    });
 
     await saveOrder({
       items: orderItems,
