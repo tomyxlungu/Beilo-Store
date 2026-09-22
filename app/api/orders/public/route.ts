@@ -97,20 +97,27 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    let query = supabaseAdmin
-      .from('orders')
-      .select('id, code, customer_name, customer_phone, status, total_minor, created_at, updated_at, stores!inner(name)');
+    const selectCols = 'id, code, customer_name, customer_phone, status, total_minor, created_at, updated_at, stores!inner(name)';
 
     if (code) {
-      query = query.eq('code', code.toUpperCase()).single();
-    } else {
-      query = query.eq('customer_phone', phone).order('created_at', { ascending: false }).limit(10);
+      const { data, error } = await supabaseAdmin
+        .from('orders')
+        .select(selectCols)
+        .eq('code', code.toUpperCase())
+        .single();
+      if (error) throw error;
+      return NextResponse.json({ orders: [data] });
     }
 
-    const { data, error } = await query;
+    const { data, error } = await supabaseAdmin
+      .from('orders')
+      .select(selectCols)
+      .eq('customer_phone', phone)
+      .order('created_at', { ascending: false })
+      .limit(10);
     if (error) throw error;
 
-    return NextResponse.json({ orders: code ? [data] : data });
+    return NextResponse.json({ orders: data });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
