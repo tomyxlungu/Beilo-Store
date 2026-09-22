@@ -11,17 +11,17 @@ export async function GET(request: NextRequest) {
       : null;
 
     // Products count
-    const { count: productsCount } = await supabaseAdmin
+    const { count: productsCount } = await supabaseAdmin()
       .from('products')
       .select('*', { count: 'exact', head: true });
 
     // Orders count
-    let ordersQuery = supabaseAdmin.from('orders').select('*', { count: 'exact', head: true });
+    let ordersQuery = supabaseAdmin().from('orders').select('*', { count: 'exact', head: true });
     if (storeFilter) ordersQuery = ordersQuery.eq(storeFilter.column, storeFilter.value);
     const { count: ordersCount } = await ordersQuery;
 
     // Revenue (last 50 orders)
-    let revenueQuery = supabaseAdmin.from('orders').select('total_minor, created_at');
+    let revenueQuery = supabaseAdmin().from('orders').select('total_minor, created_at');
     if (storeFilter) revenueQuery = revenueQuery.eq(storeFilter.column, storeFilter.value);
     const { data: recentOrders } = await revenueQuery
       .order('created_at', { ascending: false })
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     const totalRevenue = recentOrders?.reduce((sum, o) => sum + (o.total_minor || 0), 0) || 0;
 
     // Recent orders (5)
-    let recentQuery = supabaseAdmin
+    let recentQuery = supabaseAdmin()
       .from('orders')
       .select('id, code, customer_name, customer_phone, total_minor, status, created_at, stores!inner(name)');
     if (storeFilter) recentQuery = recentQuery.eq(storeFilter.column, storeFilter.value);
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       .limit(5);
 
     // Low stock (5 unique products)
-    let stockQuery = supabaseAdmin
+    let stockQuery = supabaseAdmin()
       .from('stock_levels')
       .select('quantity, variant_id, variants!inner(id, product_id, size, colour, products!inner(id, name, low_stock_threshold))')
       .lte('quantity', 10)
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
       }));
 
     // Active staff count
-    const { count: staffCount } = await supabaseAdmin
+    const { count: staffCount } = await supabaseAdmin()
       .from('users')
       .select('*', { count: 'exact', head: true })
       .eq('active', true);

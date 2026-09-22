@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   if (error) return error;
 
   try {
-    const { data, error: qError } = await supabaseAdmin
+    const { data, error: qError } = await supabaseAdmin()
       .from('homepage_blocks')
       .select('*')
       .order('sort_order');
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Invalid type. Must be one of: ${validTypes.join(', ')}` }, { status: 400 });
     }
 
-    const { data, error: insError } = await supabaseAdmin
+    const { data, error: insError } = await supabaseAdmin()
       .from('homepage_blocks')
       .insert({
         type,
@@ -75,7 +75,7 @@ export async function PUT(request: NextRequest) {
     if (sort_order !== undefined) updatePayload.sort_order = sort_order;
     if (active !== undefined) updatePayload.active = active;
 
-    const { error: uError } = await supabaseAdmin
+    const { error: uError } = await supabaseAdmin()
       .from('homepage_blocks')
       .update(updatePayload)
       .eq('id', id);
@@ -96,7 +96,7 @@ export async function DELETE(request: NextRequest) {
     const { id } = await request.json();
     if (!id) return NextResponse.json({ error: 'Block id is required' }, { status: 400 });
 
-    const { error: dError } = await supabaseAdmin.from('homepage_blocks').delete().eq('id', id);
+    const { error: dError } = await supabaseAdmin().from('homepage_blocks').delete().eq('id', id);
     if (dError) throw dError;
 
     return NextResponse.json({ ok: true });

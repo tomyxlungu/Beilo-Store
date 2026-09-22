@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabaseAdmin } from '@/lib/api/admin-auth';
 
 /**
  * Verify the request has a valid Bearer token and return the user.
@@ -13,7 +8,7 @@ async function verifyAuth(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) return null;
   const token = authHeader.split(' ')[1];
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  const { data: { user }, error } = await supabaseAdmin().auth.getUser(token);
   if (error || !user) return null;
   return user;
 }
@@ -25,7 +20,7 @@ async function requireOwner(request: NextRequest) {
   const user = await verifyAuth(request);
   if (!user) return null;
 
-  const { data: profile } = await supabaseAdmin
+  const { data: profile } = await supabaseAdmin()
     .from('users')
     .select('role')
     .eq('id', user.id)
@@ -42,7 +37,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin()
       .from('users')
       .select('id, name, email, role, store_id, active, created_at')
       .order('created_at', { ascending: false });
@@ -73,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     const userRole = role === 'OWNER' ? 'OWNER' : 'STORE_STAFF';
 
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    const { data: authData, error: authError } = await supabaseAdmin().auth.admin.createUser({
       email,
       password,
       email_confirm: true,
@@ -81,7 +76,7 @@ export async function POST(request: NextRequest) {
     });
     if (authError) throw authError;
 
-    const { error: profileError } = await supabaseAdmin.from('users').insert({
+    const { error: profileError } = await supabaseAdmin().from('users').insert({
       id: authData.user.id,
       email,
       name: name || email.split('@')[0],
@@ -114,7 +109,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot remove yourself' }, { status: 400 });
     }
 
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    const { error } = await supabaseAdmin().auth.admin.deleteUser(userId);
     if (error) throw error;
 
     return NextResponse.json({ success: true });

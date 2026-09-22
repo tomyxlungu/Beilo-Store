@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const offset = (page - 1) * limit;
 
   try {
-    let query = supabaseAdmin
+    let query = supabaseAdmin()
       .from('orders')
       .select('*, stores!inner(name)', { count: 'exact' });
 
@@ -67,7 +67,7 @@ export async function PATCH(request: NextRequest) {
       updatePayload.cancel_reason = cancel_reason || null;
     }
 
-    let query = supabaseAdmin.from('orders').update(updatePayload).eq('id', id);
+    let query = supabaseAdmin().from('orders').update(updatePayload).eq('id', id);
 
     if (user.role === 'STORE_STAFF' && user.storeId) {
       query = query.eq('pickup_store_id', user.storeId);

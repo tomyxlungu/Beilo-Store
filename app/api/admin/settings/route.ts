@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   if (error) return error;
 
   try {
-    const { data, error: qError } = await supabaseAdmin
+    const { data, error: qError } = await supabaseAdmin()
       .from('settings')
       .select('*')
       .order('key');
@@ -36,7 +36,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'key is required' }, { status: 400 });
     }
 
-    const { error: upsertError } = await supabaseAdmin
+    const { error: upsertError } = await supabaseAdmin()
       .from('settings')
       .upsert({ key, value }, { onConflict: 'key' });
 

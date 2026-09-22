@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   if (error) return error;
 
   try {
-    const { data, error: qError } = await supabaseAdmin
+    const { data, error: qError } = await supabaseAdmin()
       .from('categories')
       .select('*')
       .order('name');
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'name is required' }, { status: 400 });
     }
 
-    const { data, error: insError } = await supabaseAdmin
+    const { data, error: insError } = await supabaseAdmin()
       .from('categories')
       .insert({
         name,
@@ -64,7 +64,7 @@ export async function PUT(request: NextRequest) {
     if (slug !== undefined) updatePayload.slug = slug;
     if (image !== undefined) updatePayload.image = image;
 
-    const { error: uError } = await supabaseAdmin
+    const { error: uError } = await supabaseAdmin()
       .from('categories')
       .update(updatePayload)
       .eq('id', id);
@@ -85,7 +85,7 @@ export async function DELETE(request: NextRequest) {
     const { id } = await request.json();
     if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
 
-    const { error: dError } = await supabaseAdmin.from('categories').delete().eq('id', id);
+    const { error: dError } = await supabaseAdmin().from('categories').delete().eq('id', id);
     if (dError) throw dError;
 
     return NextResponse.json({ ok: true });

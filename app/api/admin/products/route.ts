@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   const offset = (page - 1) * limit;
 
   try {
-    let query = supabaseAdmin
+    let query = supabaseAdmin()
       .from('products')
       .select(PRODUCT_SELECT, { count: 'exact' });
 
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'name, price_minor, and category_id are required' }, { status: 400 });
     }
 
-    const { data: product, error: pError } = await supabaseAdmin
+    const { data: product, error: pError } = await supabaseAdmin()
       .from('products')
       .insert({
         name,
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
         price_override_minor: v.price_override_minor || null,
         is_active: v.is_active ?? true,
       }));
-      const { data: insertedVariants, error: vError } = await supabaseAdmin
+      const { data: insertedVariants, error: vError } = await supabaseAdmin()
         .from('variants')
         .insert(variantRows)
         .select('id');
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
           }
         }
         if (stockRows.length) {
-          const { error: sError } = await supabaseAdmin.from('stock_levels').insert(stockRows);
+          const { error: sError } = await supabaseAdmin().from('stock_levels').insert(stockRows);
           if (sError) throw sError;
         }
       }
@@ -133,7 +133,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Product id is required' }, { status: 400 });
     }
 
-    const { error: uError } = await supabaseAdmin
+    const { error: uError } = await supabaseAdmin()
       .from('products')
       .update({
         name, slug, description, price_minor, sale_price_minor, category_id,
@@ -144,14 +144,14 @@ export async function PUT(request: NextRequest) {
     if (uError) throw uError;
 
     if (variants) {
-      const { data: existing } = await supabaseAdmin.from('variants').select('id').eq('product_id', id);
+      const { data: existing } = await supabaseAdmin().from('variants').select('id').eq('product_id', id);
       const existingIds = (existing ?? []).map((v) => v.id);
       const incomingIds = variants.filter((v: any) => v.id).map((v: any) => v.id);
       const toDelete = existingIds.filter((eid) => !incomingIds.includes(eid));
 
       if (toDelete.length) {
-        await supabaseAdmin.from('stock_levels').delete().in('variant_id', toDelete);
-        await supabaseAdmin.from('variants').delete().in('id', toDelete);
+        await supabaseAdmin().from('stock_levels').delete().in('variant_id', toDelete);
+        await supabaseAdmin().from('variants').delete().in('id', toDelete);
       }
 
       for (const v of variants) {
@@ -166,17 +166,17 @@ export async function PUT(request: NextRequest) {
 
         let variantId: string;
         if (v.id) {
-          await supabaseAdmin.from('variants').update(variantPayload).eq('id', v.id);
+          await supabaseAdmin().from('variants').update(variantPayload).eq('id', v.id);
           variantId = v.id;
         } else {
-          const { data, error: insErr } = await supabaseAdmin.from('variants').insert(variantPayload).select('id').single();
+          const { data, error: insErr } = await supabaseAdmin().from('variants').insert(variantPayload).select('id').single();
           if (insErr) throw insErr;
           variantId = data.id;
         }
 
         if (v.stock) {
           for (const s of v.stock) {
-            await supabaseAdmin.from('stock_levels').upsert({
+            await supabaseAdmin().from('stock_levels').upsert({
               variant_id: variantId,
               store_id: s.store_id,
               quantity: s.quantity ?? 0,
@@ -200,7 +200,7 @@ export async function DELETE(request: NextRequest) {
     const { id } = await request.json();
     if (!id) return NextResponse.json({ error: 'Product id is required' }, { status: 400 });
 
-    const { error: dError } = await supabaseAdmin.from('products').delete().eq('id', id);
+    const { error: dError } = await supabaseAdmin().from('products').delete().eq('id', id);
     if (dError) throw dError;
 
     return NextResponse.json({ ok: true });

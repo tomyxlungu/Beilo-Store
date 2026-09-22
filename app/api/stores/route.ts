@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabaseAdmin } from '@/lib/api/admin-auth';
 
 /**
  * GET /api/stores
@@ -12,7 +7,7 @@ const supabaseAdmin = createClient(
  */
 export async function GET(_request: NextRequest) {
   try {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin()
       .from('stores')
       .select('id, name, address, phone, whatsapp_number, hours, image, map_url')
       .eq('active', true)

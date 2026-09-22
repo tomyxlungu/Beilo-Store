@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabaseAdmin } from '@/lib/api/admin-auth';
 
 const PRODUCT_SELECT = `
   *,
@@ -35,7 +30,7 @@ export async function GET(request: NextRequest) {
   const offset = (page - 1) * limit;
 
   try {
-    let query = supabaseAdmin
+    let query = supabaseAdmin()
       .from('products')
       .select(PRODUCT_SELECT, { count: 'exact' })
       .eq('is_active', true);

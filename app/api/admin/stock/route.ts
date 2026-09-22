@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   const lowOnly = searchParams.get('low') === 'true';
 
   try {
-    let query = supabaseAdmin
+    let query = supabaseAdmin()
       .from('stock_levels')
       .select(`
         quantity, variant_id, store_id,
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Staff can only adjust stock for their own store' }, { status: 403 });
     }
 
-    const { data: current, error: fetchErr } = await supabaseAdmin
+    const { data: current, error: fetchErr } = await supabaseAdmin()
       .from('stock_levels')
       .select('quantity')
       .eq('variant_id', variant_id)
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Insufficient stock. Current: ${currentQty}, adjustment: ${delta}` }, { status: 400 });
     }
 
-    const { error: upsertErr } = await supabaseAdmin
+    const { error: upsertErr } = await supabaseAdmin()
       .from('stock_levels')
       .upsert({
         variant_id,
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     if (upsertErr) throw upsertErr;
 
-    await supabaseAdmin.from('stock_adjustments').insert({
+    await supabaseAdmin().from('stock_adjustments').insert({
       variant_id,
       store_id,
       delta,

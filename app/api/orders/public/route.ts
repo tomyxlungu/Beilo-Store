@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabaseAdmin } from '@/lib/api/admin-auth';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function generateOrderCode(): Promise<string> {
   // Prefer the DB sequence when the migration has been applied.
   try {
-    const { data, error } = await supabaseAdmin.rpc('next_order_code');
+    const { data, error } = await supabaseAdmin().rpc('next_order_code');
     if (!error && typeof data === 'string' && data) return data;
   } catch {
     /* fall through to the retry loop */
@@ -20,11 +15,11 @@ async function generateOrderCode(): Promise<string> {
   // Fallback: count-based code with retries on unique collisions
   // (e.g. after order deletions leave gaps in the sequence).
   for (let attempt = 0; attempt < 5; attempt++) {
-    const { count } = await supabaseAdmin
+    const { count } = await supabaseAdmin()
       .from('orders')
       .select('*', { count: 'exact', head: true });
     const candidate = `BEI-${(count ?? 0) + 1001 + attempt}`;
-    const { data: existing } = await supabaseAdmin
+    const { data: existing } = await supabaseAdmin()
       .from('orders')
       .select('id')
       .eq('code', candidate)
@@ -68,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     // The store must exist (and be active) — otherwise the
     // foreign key fails with a cryptic error.
-    const { data: store, error: storeError } = await supabaseAdmin
+    const { data: store, error: storeError } = await supabaseAdmin()
       .from('stores')
       .select('id, active')
       .eq('id', pickup_store_id)
@@ -101,7 +96,7 @@ export async function POST(request: NextRequest) {
     const totalMinor = itemsTotal + Math.round(feeMinor);
     const orderCode = await generateOrderCode();
 
-    const { data: order, error: orderError } = await supabaseAdmin
+    const { data: order, error: orderError } = await supabaseAdmin()
       .from('orders')
       .insert({
         code: orderCode,
@@ -117,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     if (orderError) throw orderError;
 
-    const { error: itemsError } = await supabaseAdmin
+    const { error: itemsError } = await supabaseAdmin()
       .from('order_items')
       .insert(orderItems.map((item) => ({ ...item, order_id: order.id })));
 
@@ -146,7 +141,7 @@ export async function GET(request: NextRequest) {
     const selectCols = 'id, code, customer_name, customer_phone, status, total_minor, created_at, updated_at, stores!inner(name)';
 
     if (code) {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabaseAdmin()
         .from('orders')
         .select(selectCols)
         .eq('code', code.toUpperCase())
@@ -155,7 +150,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ orders: [data] });
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin()
       .from('orders')
       .select(selectCols)
       .eq('customer_phone', phone)

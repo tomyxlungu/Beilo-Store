@@ -1,10 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let _admin: SupabaseClient | null = null;
+
+/**
+ * Lazily creates the service-role Supabase client on first use
+ * (inside a request handler), never at module import time — so
+ * `next build` page-data collection can't crash when env vars
+ * are absent, and missing vars surface as a clear runtime error.
+ */
+export function supabaseAdmin(): SupabaseClient {
+  if (!_admin) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) {
+      throw new Error(
+        'Missing Supabase server env vars (NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).'
+      );
+    }
+    _admin = createClient(url, key);
+  }
+  return _admin;
+}
 
 export interface AuthenticatedUser {
   id: string;
@@ -22,10 +39,10 @@ export async function verifyAdmin(request: NextRequest): Promise<AuthenticatedUs
   if (!authHeader?.startsWith('Bearer ')) return null;
 
   const token = authHeader.split(' ')[1];
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  const { data: { user }, error } = await supabaseAdmin().auth.getUser(token);
   if (error || !user) return null;
 
-  const { data: profile } = await supabaseAdmin
+  const { data: profile } = await supabaseAdmin()
     .from('users')
     .select('id, email, role, store_id')
     .eq('id', user.id)
@@ -65,5 +82,3 @@ export async function requireAdmin(request: NextRequest) {
   }
   return { user, error: null };
 }
-
-export { supabaseAdmin };
