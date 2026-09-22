@@ -80,7 +80,7 @@ export default function OrdersPage() {
               <div>
                 <p className="order-id">{order.id}</p>
                 <p className="order-date">
-                  {formatDate(order.date)}
+                  {formatDate(order.createdAt)}
                 </p>
               </div>
               <span className="order-status">

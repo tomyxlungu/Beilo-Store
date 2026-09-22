@@ -27,12 +27,14 @@ const shopLinks = [
 
 const helpLinks = [
   { label: 'Stores', href: '/stores' },
+  { label: 'About us', href: '/about' },
   { label: 'FAQ', href: '/faq' },
   { label: 'Shopping Bag', href: '/cart' },
   { label: 'Checkout', href: '/checkout' },
   { label: 'Wishlist', href: '/wishlist' },
   { label: 'Orders', href: '/orders' },
   { label: 'Account', href: '/account' },
+  { label: 'Stuff', href: '/admin/login' },
 ];
 
 const socials = [
