@@ -278,6 +278,13 @@ async function seed() {
 
       if (items.length === 0) continue;
 
+      // Spread orders across the last 60 days (recent-weighted)
+      // so dashboard trends and the sales chart show real movement
+      const daysAgo = Math.floor(Math.pow(Math.random(), 1.5) * 60);
+      const createdAt = new Date(
+        Date.now() - daysAgo * 86400000 - Math.floor(Math.random() * 86400000)
+      ).toISOString();
+
       const { data: insertedOrder, error: orderErr } = await supabase
         .from('orders')
         .insert({
@@ -289,6 +296,7 @@ async function seed() {
           status,
           total_minor: totalMinor,
           cancel_reason: status === 'CANCELLED' ? pick(['Changed mind', 'Out of stock', 'Customer no-show']) : null,
+          created_at: createdAt,
         })
         .select()
         .single();
