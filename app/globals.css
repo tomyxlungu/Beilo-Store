@@ -587,6 +587,97 @@ textarea {
   max-width: 380px;
 }
 
+/* ---------- Homepage CMS hero ---------- */
+.hero-section {
+  position: relative;
+  overflow: hidden;
+  background: var(--charcoal-noir);
+}
+
+.hero-section-bg {
+  position: absolute;
+  inset: 0;
+}
+
+.hero-section-bg-img {
+  object-fit: cover;
+}
+
+.hero-section-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgba(43, 43, 43, 0.88) 0%,
+    rgba(43, 43, 43, 0.45) 55%,
+    rgba(43, 43, 43, 0.1) 100%
+  );
+}
+
+.hero-section-content {
+  position: relative;
+  z-index: 1;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--space-3xl) var(--space-lg);
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  color: white;
+}
+
+.hero-section-content > * {
+  max-width: 640px;
+}
+
+.hero-section-label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  opacity: 0.75;
+  margin-bottom: var(--space-sm);
+}
+
+.hero-section-title {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+  margin-bottom: var(--space-lg);
+}
+
+.hero-section-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 12px 28px;
+  background: var(--canvas);
+  color: var(--charcoal-noir);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.hero-section-cta:hover {
+  background: var(--cloud-veil);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 639px) {
+  .hero-section-content {
+    min-height: 340px;
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+  }
+}
+
 .look-section-label {
   font-size: var(--font-size-xs);
   font-weight: 600;
@@ -6239,6 +6330,10 @@ body:has(.admin-layout) .main-content {
 
 .admin-kpi-card:hover {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+button.admin-kpi-card {
+  font-family: inherit;
 }
 
 .admin-kpi-icon {

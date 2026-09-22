@@ -41,9 +41,13 @@ export default function ProductCard({
     product.images[0] ?? resolveFallback(product)
   );
 
-  const soldOut = product.stockByStore.every(
-    (stock) => stock.status === 'out-of-stock'
-  );
+  // Only flag sold out when stock info exists and every store
+  // is out — an empty stock list means "unknown", not "sold out".
+  const soldOut =
+    product.stockByStore.length > 0 &&
+    product.stockByStore.every(
+      (stock) => stock.status === 'out-of-stock'
+    );
 
   const tag = soldOut
     ? { label: 'Sold out', modifier: 'product-tag--sold' }

@@ -46,14 +46,23 @@ interface SocialStats {
   stats: { id: string; value: string; label: string; Icon?: any }[];
 }
 
+interface Hero {
+  title: string;
+  subtitle?: string;
+  image?: string;
+  ctaText?: string;
+  href?: string;
+}
+
 interface HomeSectionsProps {
+  hero?: Hero | null;
   looks: Look[];
   categoryBlocks: CategoryBlock[];
   dealProducts: DealProduct[];
   socialStats: SocialStats;
 }
 
-export default function HomeSections({ looks, categoryBlocks, dealProducts, socialStats }: HomeSectionsProps) {
+export default function HomeSections({ hero, looks, categoryBlocks, dealProducts, socialStats }: HomeSectionsProps) {
   const catsRef = useRef<HTMLDivElement>(null);
   const dealsRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +74,25 @@ export default function HomeSections({ looks, categoryBlocks, dealProducts, soci
 
   return (
     <div className="home-sections">
+      {hero && (
+        <section className="hero-section">
+          {hero.image && (
+            <div className="hero-section-bg">
+              <Image src={hero.image} alt={hero.title} fill sizes="100vw" className="hero-section-bg-img" priority />
+              <div className="hero-section-bg-overlay" />
+            </div>
+          )}
+          <div className="hero-section-content">
+            {hero.subtitle && <p className="hero-section-label">{hero.subtitle}</p>}
+            <h1 className="hero-section-title">{hero.title}</h1>
+            {hero.ctaText && (
+              <Link href={hero.href || '/shop'} className="hero-section-cta">
+                {hero.ctaText} <span aria-hidden="true">→</span>
+              </Link>
+            )}
+          </div>
+        </section>
+      )}
       {looks.map((look) => (
         <section key={look.id} className="look-section">
           <div className="look-section-bg">

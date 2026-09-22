@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   Users,
   BarChart3,
+  LayoutTemplate,
   Settings,
   LogOut,
   Menu,
@@ -31,6 +32,7 @@ const allNavItems = [
   { href: '/admin/products', label: 'Products', icon: Package, ownerOnly: false },
   { href: '/admin/staff', label: 'Customers', icon: Users, ownerOnly: true },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3, ownerOnly: true },
+  { href: '/admin/homepage', label: 'Homepage', icon: LayoutTemplate, ownerOnly: true },
   { href: '/admin/settings', label: 'Settings', icon: Settings, ownerOnly: false },
 ];
 

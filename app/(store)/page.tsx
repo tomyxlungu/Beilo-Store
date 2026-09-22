@@ -18,6 +18,35 @@ export default async function HomePage() {
 
   const mapped = mapProducts(products ?? []);
 
+  // Homepage CMS blocks (announcements render in the top bar)
+  const { data: blocks } = await supabase
+    .from('homepage_blocks')
+    .select('type, title, content, sort_order')
+    .eq('active', true)
+    .order('sort_order');
+
+  const heroBlock = (blocks ?? []).find((b: any) => b.type === 'hero');
+  const hero = heroBlock
+    ? {
+        title: heroBlock.title,
+        subtitle: heroBlock.content?.subtitle,
+        image: heroBlock.content?.image,
+        ctaText: heroBlock.content?.cta_text,
+        href: heroBlock.content?.href || '/shop',
+      }
+    : null;
+
+  const quickLinkBlocks = (blocks ?? []).filter((b: any) => b.type === 'quick_link');
+  const cmsCategoryBlocks = quickLinkBlocks.map((b: any, i: number) => ({
+    id: `cms-${i}`,
+    title: b.title,
+    href: b.content?.href || '/shop',
+    items: ((b.content?.items as any[]) || []).map((item: any, j: number) => ({
+      label: item.label || `Link ${j + 1}`,
+      image: item.image || '/products/cozy.jpeg',
+    })),
+  }));
+
   const mensProducts = mapped.filter(p => p.category === 'Men');
   const womensProducts = mapped.filter(p => p.category === 'Women');
   const denimProducts = mapped.filter(p => p.category === 'Denim');
@@ -55,7 +84,7 @@ export default async function HomePage() {
     },
   ];
 
-  const categoryBlocks = [
+  const categoryBlocks = cmsCategoryBlocks.length > 0 ? cmsCategoryBlocks : [
     { id: 'deals', title: 'Deals under K 3,500', href: '/shop?maxPrice=3500', items: [{ label: 'Hoodies', image: '/categories/hoodies/hoodie.jpeg' }, { label: 'Tees', image: '/categories/tees/shirt.jpg' }, { label: 'Caps', image: '/categories/caps/cap.jpeg' }, { label: 'Sneakers', image: '/categories/sneekers/shoe.jpeg' }] },
     { id: 'trending', title: 'Trending now', href: '/shop?sort=trending', items: [{ label: 'Denim', image: '/categories/denim/Jeans.jpeg' }, { label: 'Cargo', image: '/categories/cargo/166492517477861535.jpeg' }, { label: 'Headwear', image: '/categories/caps/cap.jpeg' }, { label: 'Basics', image: '/categories/basics/7318418141817825.jpeg' }] },
     { id: 'men', title: 'Shop Men', href: '/shop?category=Men', items: [{ label: 'Jackets', image: '/categories/denim/Jeans.jpeg' }, { label: 'Pants', image: '/categories/cargo/166492517477861535.jpeg' }, { label: 'Footwear', image: '/categories/sneekers/shoe.jpeg' }, { label: 'Accessories', image: '/categories/caps/cap.jpeg' }] },
@@ -80,6 +109,7 @@ export default async function HomePage() {
         <Link href="/shop" className="btn btn-primary">Shop Now</Link>
       </div>
       <HomeSections
+        hero={hero}
         looks={looks}
         categoryBlocks={categoryBlocks}
         dealProducts={[]}
