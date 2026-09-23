@@ -1,17 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabaseBrowser as supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Upload, X, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 const SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 

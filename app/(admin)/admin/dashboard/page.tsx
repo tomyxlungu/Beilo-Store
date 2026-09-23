@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabaseBrowser as supabase } from '@/lib/supabase/client';
 import {
   DollarSign,
   ShoppingCart,
@@ -10,11 +10,6 @@ import {
   TrendingDown,
   Package,
 } from 'lucide-react';
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   NEW: { label: 'Processing', color: '#d97706', bg: '#fef3c7' },

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabaseBrowser as supabase } from '@/lib/supabase/client';
 import {
   Eye,
   ShoppingBag,
@@ -10,11 +10,6 @@ import {
   TrendingUp,
   RefreshCw,
 } from 'lucide-react';
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 const EVENT_TYPES = ['page_view', 'product_view', 'add_to_bag', 'whatsapp_checkout'] as const;
 type EventType = (typeof EVENT_TYPES)[number];
