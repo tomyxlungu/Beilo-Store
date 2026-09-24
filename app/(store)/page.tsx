@@ -2,6 +2,7 @@
 import { createServerSupabase } from '@/lib/supabase/server';
 import { PRODUCT_SELECT_SIMPLE, mapProducts } from '@/lib/supabase/store-mapper';
 import HomeSections from '@/components/home/HomeSections';
+import HomeSearchBar from '@/components/home/HomeSearchBar';
 import TrackView from '@/components/analytics/TrackView';
 import Link from 'next/link';
 
@@ -25,19 +26,15 @@ export default async function HomePage() {
     .eq('active', true)
     .order('sort_order');
 
-  const heroBlock = (blocks ?? []).find((b: any) => b.type === 'hero');
-  const hero = heroBlock
-    ? {
-        title: heroBlock.title,
-        subtitle: heroBlock.content?.subtitle,
-        image: heroBlock.content?.image,
-        ctaText: heroBlock.content?.cta_text,
-        href: heroBlock.content?.href || '/shop',
-      }
-    : null;
+  const heroBlocks = (blocks ?? []).filter((b: any) => b.type === 'hero');
 
   const quickLinkBlocks = (blocks ?? []).filter((b: any) => b.type === 'quick_link');
-  const cmsCategoryBlocks = quickLinkBlocks.map((b: any, i: number) => ({
+  // Ignore blocks with no usable links — one empty test block must
+  // never wipe out the whole category section.
+  const usableQuickLinks = quickLinkBlocks.filter(
+    (b: any) => ((b.content?.items as any[]) || []).some((item: any) => item?.label?.trim())
+  );
+  const cmsCategoryBlocks = usableQuickLinks.map((b: any, i: number) => ({
     id: `cms-${i}`,
     title: b.title,
     href: b.content?.href || '/shop',
@@ -91,6 +88,20 @@ export default async function HomePage() {
     { id: 'women', title: 'Shop Women', href: '/shop?category=Women', items: [{ label: 'Tops', image: '/categories/tees/shirt.jpg' }, { label: 'Denim', image: '/categories/denim/Jeans.jpeg' }, { label: 'Hoodies', image: '/categories/hoodies/hoodie.jpeg' }, { label: 'Hats', image: '/categories/caps/cap.jpeg' }] },
   ];
 
+  // Deals for you: real discounted products (sale price below
+  // regular price), newest first, capped at 8.
+  const dealProducts = mapped
+    .filter((p) => p.salePrice != null)
+    .slice(0, 8)
+    .map((p) => ({
+      id: p.id,
+      slug: p.slug,
+      name: p.name,
+      price: p.salePrice as number,
+      originalPrice: p.price,
+      image: p.images[0] || '/products/cozy.jpeg',
+    }));
+
   const socialStats = {
     source: 'Facebook',
     sourceHandle: '@beilo.store',
@@ -102,17 +113,44 @@ export default async function HomePage() {
     ],
   };
 
+  // Carousel slides: every active CMS hero block, falling back to the
+  // editorial looks so the hero never renders empty.
+  const usingLooksFallback = heroBlocks.length === 0;
+  const heroSlides = !usingLooksFallback
+    ? heroBlocks.map((b: any, i: number) => ({
+        id: b.id ?? `hero-${i}`,
+        title: b.title,
+        subtext: b.content?.subtitle,
+        image: b.content?.image,
+        ctaText: b.content?.cta_text,
+        href: b.content?.href || '/shop',
+        offer: b.content?.offer,
+      }))
+    : looks.map((look) => ({
+        id: look.id,
+        title: look.title,
+        eyebrow: look.label,
+        subtext: look.description,
+        image: look.image,
+        ctaText: 'Shop Now',
+        href: look.href,
+        offer: undefined as string | undefined,
+      }));
+
   return (
     <>
       <TrackView type="page_view" metadata={{ page: 'home' }} />
+      <HomeSearchBar />
       <div className="mobile-shop-cta">
         <Link href="/shop" className="btn btn-primary">Shop Now</Link>
       </div>
       <HomeSections
-        hero={hero}
-        looks={looks}
+        heroSlides={heroSlides}
+        // When the looks double as carousel slides, hide the look
+        // sections below so identical content isn't shown twice.
+        looks={usingLooksFallback ? [] : looks}
         categoryBlocks={categoryBlocks}
-        dealProducts={[]}
+        dealProducts={dealProducts}
         socialStats={socialStats}
       />
     </>

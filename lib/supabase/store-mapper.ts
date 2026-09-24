@@ -50,11 +50,16 @@ export function mapProduct(raw: RawProduct): Product {
     }
   }
 
+  const saleKwacha =
+    raw.sale_price_minor != null ? Math.round(raw.sale_price_minor / 100) : null;
+  const priceKwacha = Math.round(raw.price_minor / 100);
+
   return {
     id: raw.id,
     slug: raw.slug,
     name: raw.name,
-    price: Math.round(raw.price_minor / 100),
+    price: priceKwacha,
+    salePrice: saleKwacha != null && saleKwacha > 0 && saleKwacha < priceKwacha ? saleKwacha : undefined,
     category: raw.categories?.name ?? 'Uncategorized',
     description: raw.description,
     sizes,

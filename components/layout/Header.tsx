@@ -499,31 +499,34 @@ export default function Header() {
           </div>
         </div>
 
-        {/* MOBILE SEARCH */}
-        <form
-          onSubmit={handleSearchSubmit}
-          className="mobile-search show-mobile"
-          role="search"
-        >
-          <Input
-            type="search"
-            placeholder="Search for products, stores and more..."
-            value={searchQuery}
-            onChange={(event) =>
-              setSearchQuery(
-                event.target.value
-              )
-            }
-            icon={<Search size={17} />}
-            size="md"
-            variant="default"
-            clearable
-            onClear={() =>
-              setSearchQuery('')
-            }
-            aria-label="Search products, stores and more"
-          />
-        </form>
+        {/* MOBILE SEARCH — hidden on the homepage, which renders
+            its own prominent search bar (HomeSearchBar). */}
+        {pathname !== '/' && (
+          <form
+            onSubmit={handleSearchSubmit}
+            className="mobile-search show-mobile"
+            role="search"
+          >
+            <Input
+              type="search"
+              placeholder="Search for products, stores and more..."
+              value={searchQuery}
+              onChange={(event) =>
+                setSearchQuery(
+                  event.target.value
+                )
+              }
+              icon={<Search size={17} />}
+              size="md"
+              variant="default"
+              clearable
+              onClear={() =>
+                setSearchQuery('')
+              }
+              aria-label="Search products, stores and more"
+            />
+          </form>
+        )}
 
         <MainNavbar />
 

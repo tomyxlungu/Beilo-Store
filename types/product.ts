@@ -13,6 +13,8 @@ export interface Product {
   slug: string;
   name: string;
   price: number;
+  /** Sale price in Kwacha, when the product is discounted. */
+  salePrice?: number;
   category: string;
   description: string;
   sizes: string[];

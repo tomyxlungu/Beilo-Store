@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import ImageUpload from '@/components/ui/ImageUpload';
 
 type BlockType = 'hero' | 'quick_link' | 'announcement';
 
@@ -32,6 +33,7 @@ interface Block {
     image?: string;
     cta_text?: string;
     href?: string;
+    offer?: string;
     items?: LinkItem[];
   };
   sort_order: number;
@@ -59,6 +61,7 @@ const EMPTY_FORM = {
   image: '',
   cta_text: '',
   href: '',
+  offer: '',
   items: [] as LinkItem[],
   active: true,
 };
@@ -106,6 +109,7 @@ export default function AdminHomepage() {
       image: block.content?.image || '',
       cta_text: block.content?.cta_text || '',
       href: block.content?.href || '',
+      offer: block.content?.offer || '',
       items: block.content?.items ? [...block.content.items] : [],
       active: block.active,
     });
@@ -148,6 +152,7 @@ export default function AdminHomepage() {
       if (form.image.trim()) content.image = form.image.trim();
       if (form.cta_text.trim()) content.cta_text = form.cta_text.trim();
       if (form.href.trim()) content.href = form.href.trim();
+      if (form.offer.trim()) content.offer = form.offer.trim();
       if (form.type === 'quick_link') {
         content.items = form.items
           .filter((i) => i.label.trim())
@@ -387,16 +392,13 @@ export default function AdminHomepage() {
                   value={form.subtitle}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ subtitle: e.target.value })}
                 />
-                <Input
-                  label="Background image URL"
-                  placeholder="/products/beliloimg.avif or https://…"
+                <ImageUpload
+                  label="Background image"
                   value={form.image}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ image: e.target.value })}
-                  hint="Use a path from your store images or a full URL"
+                  onChange={(url) => updateForm({ image: url })}
+                  pathPrefix="homepage"
+                  hint="Upload from your machine — shows on the store hero"
                 />
-                {form.image && (
-                  <img src={form.image} alt="" style={{ width: '100%', maxHeight: '180px', objectFit: 'cover', borderRadius: '12px' }} />
-                )}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <Input
                     label="Button text"
@@ -411,6 +413,13 @@ export default function AdminHomepage() {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ href: e.target.value })}
                   />
                 </div>
+                <Input
+                  label="Offer line (optional)"
+                  placeholder="e.g. Up to 30% off this week"
+                  value={form.offer}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ offer: e.target.value })}
+                  hint="Small promo line under the button on the store"
+                />
               </>
             )}
 
@@ -429,18 +438,21 @@ export default function AdminHomepage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {form.items.map((item, i) => (
                     <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div style={{ flex: 1 }}>
                         <Input
                           placeholder="Label (e.g. Hoodies)"
                           value={item.label}
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(i, { label: e.target.value })}
-                        />
-                        <Input
-                          placeholder="Image URL"
-                          value={item.image}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(i, { image: e.target.value })}
+                          aria-label={`Link ${i + 1} label`}
                         />
                       </div>
+                      <ImageUpload
+                        compact
+                        label={`Upload image for link ${i + 1}`}
+                        value={item.image}
+                        onChange={(url) => updateItem(i, { image: url })}
+                        pathPrefix="homepage"
+                      />
                       <button type="button" onClick={() => removeItem(i)} className="admin-action-btn danger" aria-label="Remove link">
                         <X size={14} />
                       </button>

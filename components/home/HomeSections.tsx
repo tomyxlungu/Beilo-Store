@@ -5,6 +5,7 @@ import { useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, ChevronLeft, ChevronRight, Globe, Images, Users } from 'lucide-react';
+import HeroCarousel, { type HeroSlide } from '@/components/home/HeroCarousel';
 
 interface LookProduct {
   name: string;
@@ -32,10 +33,16 @@ interface CategoryBlock {
 
 interface DealProduct {
   id: string;
+  slug: string;
   name: string;
   price: number;
   originalPrice?: number;
   image: string;
+}
+
+function discountPct(price: number, original?: number): number | null {
+  if (!original || original <= 0 || price >= original) return null;
+  return Math.round((1 - price / original) * 100);
 }
 
 interface SocialStats {
@@ -46,23 +53,15 @@ interface SocialStats {
   stats: { id: string; value: string; label: string; Icon?: any }[];
 }
 
-interface Hero {
-  title: string;
-  subtitle?: string;
-  image?: string;
-  ctaText?: string;
-  href?: string;
-}
-
 interface HomeSectionsProps {
-  hero?: Hero | null;
+  heroSlides: HeroSlide[];
   looks: Look[];
   categoryBlocks: CategoryBlock[];
   dealProducts: DealProduct[];
   socialStats: SocialStats;
 }
 
-export default function HomeSections({ hero, looks, categoryBlocks, dealProducts, socialStats }: HomeSectionsProps) {
+export default function HomeSections({ heroSlides, looks, categoryBlocks, dealProducts, socialStats }: HomeSectionsProps) {
   const catsRef = useRef<HTMLDivElement>(null);
   const dealsRef = useRef<HTMLDivElement>(null);
 
@@ -72,27 +71,26 @@ export default function HomeSections({ hero, looks, categoryBlocks, dealProducts
     el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: 'smooth' });
   };
 
+  // Flatten category blocks into one card per category, leaving
+  // price-based collections (Deals under K…) to the Deals section.
+  // Deduped by label, capped at 8.
+  const seenLabels = new Set<string>();
+  const categoryCards = categoryBlocks
+    .filter((block) => !block.href.includes('maxPrice'))
+    .flatMap((block) =>
+      block.items.map((item) => ({ ...item, href: block.href }))
+    )
+    .filter((card) => {
+      const key = card.label.trim().toLowerCase();
+      if (!key || seenLabels.has(key)) return false;
+      seenLabels.add(key);
+      return true;
+    })
+    .slice(0, 8);
+
   return (
     <div className="home-sections">
-      {hero && (
-        <section className="hero-section">
-          {hero.image && (
-            <div className="hero-section-bg">
-              <Image src={hero.image} alt={hero.title} fill sizes="100vw" className="hero-section-bg-img" priority />
-              <div className="hero-section-bg-overlay" />
-            </div>
-          )}
-          <div className="hero-section-content">
-            {hero.subtitle && <p className="hero-section-label">{hero.subtitle}</p>}
-            <h1 className="hero-section-title">{hero.title}</h1>
-            {hero.ctaText && (
-              <Link href={hero.href || '/shop'} className="hero-section-cta">
-                {hero.ctaText} <span aria-hidden="true">→</span>
-              </Link>
-            )}
-          </div>
-        </section>
-      )}
+      <HeroCarousel slides={heroSlides} />
       {looks.map((look) => (
         <section key={look.id} className="look-section">
           <div className="look-section-bg">
@@ -147,62 +145,79 @@ export default function HomeSections({ hero, looks, categoryBlocks, dealProducts
         </div>
       </section>
 
-      <section className="home-section">
-        <div className="section-header">
-          <h2 className="section-title">Shop by category</h2>
-          <div className="slider-nav">
-            <button type="button" className="slider-btn" onClick={() => scrollTrack(catsRef, -1)} aria-label="Scroll categories left"><ChevronLeft size={18} strokeWidth={2.5} /></button>
-            <button type="button" className="slider-btn" onClick={() => scrollTrack(catsRef, 1)} aria-label="Scroll categories right"><ChevronRight size={18} strokeWidth={2.5} /></button>
-          </div>
-        </div>
-        <div ref={catsRef} className="category-blocks-grid">
-          {categoryBlocks.map((block) => (
-            <div key={block.id} className="category-block">
-              <h3 className="category-block-title">{block.title}</h3>
-              <div className="category-block-items">
-                {block.items.map((item) => (
-                  <Link key={item.label} href={block.href} className="category-block-item">
-                    <div className="category-block-item-image">
-                      <Image src={item.image} alt={item.label} fill sizes="(max-width: 640px) 40vw, 200px)" className="object-cover" />
-                    </div>
-                    <span className="category-block-item-label">{item.label}</span>
-                  </Link>
-                ))}
+      {categoryCards.length > 0 && (
+        <section className="home-section" aria-labelledby="shop-by-category-heading">
+          <div className="section-header">
+            <h2 id="shop-by-category-heading" className="section-title">Shop by category</h2>
+            <div className="section-header-actions">
+              <div className="slider-nav category-carousel-arrows">
+                <button type="button" className="slider-btn" onClick={() => scrollTrack(catsRef, -1)} aria-label="Scroll categories left"><ChevronLeft size={18} strokeWidth={2.5} /></button>
+                <button type="button" className="slider-btn" onClick={() => scrollTrack(catsRef, 1)} aria-label="Scroll categories right"><ChevronRight size={18} strokeWidth={2.5} /></button>
               </div>
-              <Link href={block.href} className="category-block-link">Shop now</Link>
+              <Link href="/shop" className="section-cta">See all <ArrowRight size={16} strokeWidth={2.5} /></Link>
             </div>
-          ))}
-        </div>
-      </section>
+          </div>
+          <div ref={catsRef} className="category-carousel-track">
+            {categoryCards.map((card) => (
+              <Link
+                key={card.label}
+                href={card.href}
+                className="category-card"
+                aria-label={`Shop ${card.label}`}
+              >
+                <span className="category-card-image">
+                  <Image
+                    src={card.image || '/products/cozy.jpeg'}
+                    alt=""
+                    fill
+                    sizes="(max-width: 640px) 44vw, (max-width: 1024px) 22vw, 240px"
+                    className="object-cover"
+                  />
+                </span>
+                <span className="category-card-label">{card.label}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
-      <section className="home-section">
-        <div className="section-header">
-          <h2 className="section-title">Deals for you</h2>
-          <div className="section-header-actions">
-            <div className="slider-nav">
-              <button type="button" className="slider-btn" onClick={() => scrollTrack(dealsRef, -1)} aria-label="Scroll deals left"><ChevronLeft size={18} strokeWidth={2.5} /></button>
-              <button type="button" className="slider-btn" onClick={() => scrollTrack(dealsRef, 1)} aria-label="Scroll deals right"><ChevronRight size={18} strokeWidth={2.5} /></button>
+      {dealProducts.length > 0 && (
+        <section className="home-section" aria-labelledby="deals-heading">
+          <div className="section-header">
+            <h2 id="deals-heading" className="section-title">Deals for you</h2>
+            <div className="section-header-actions">
+              <div className="slider-nav deals-arrows">
+                <button type="button" className="slider-btn" onClick={() => scrollTrack(dealsRef, -1)} aria-label="Scroll deals left"><ChevronLeft size={18} strokeWidth={2.5} /></button>
+                <button type="button" className="slider-btn" onClick={() => scrollTrack(dealsRef, 1)} aria-label="Scroll deals right"><ChevronRight size={18} strokeWidth={2.5} /></button>
+              </div>
+              <Link href="/shop?maxPrice=3500" className="section-cta">See all <ArrowRight size={16} strokeWidth={2.5} /></Link>
             </div>
-            <Link href="/shop?maxPrice=3500" className="section-cta">See all <ArrowRight size={16} strokeWidth={2.5} /></Link>
           </div>
-        </div>
-        <div ref={dealsRef} className="deals-scroll">
-          {dealProducts.map((product) => (
-            <Link key={product.id} href={`/product/${product.id}`} className="deal-card">
-              <div className="deal-card-image-wrap">
-                <Image src={product.image} alt={product.name} fill sizes="160px" className="deal-card-image" />
-              </div>
-              <div className="deal-card-body">
-                <p className="deal-card-name">{product.name}</p>
-                <div className="deal-card-pricing">
-                  <span className="deal-card-price">K {product.price.toLocaleString()}</span>
-                  {product.originalPrice && <span className="deal-card-price-original">K {product.originalPrice.toLocaleString()}</span>}
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+          <div ref={dealsRef} className="deals-scroll">
+            {dealProducts.map((product) => {
+              const pct = discountPct(product.price, product.originalPrice);
+              return (
+                <Link key={product.id} href={`/product/${product.slug}`} className="deal-card" aria-label={`${product.name}, K ${product.price.toLocaleString()}`}>
+                  <div className="deal-card-image-wrap">
+                    <Image src={product.image} alt="" fill sizes="(max-width: 640px) 44vw, 200px" className="deal-card-image" />
+                    {pct !== null && (
+                      <span className="deal-badge">-{pct}%</span>
+                    )}
+                  </div>
+                  <div className="deal-card-body">
+                    <p className="deal-card-flag">Limited time deal</p>
+                    <p className="deal-card-name">{product.name}</p>
+                    <div className="deal-card-pricing">
+                      <span className="deal-card-price">K {product.price.toLocaleString()}</span>
+                      {product.originalPrice && <span className="deal-card-price-original">K {product.originalPrice.toLocaleString()}</span>}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
