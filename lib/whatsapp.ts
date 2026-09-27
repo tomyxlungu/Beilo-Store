@@ -76,13 +76,26 @@ export function generateWhatsAppMessage(
   return message;
 }
 
+export function buildWhatsAppUrl(
+  phoneNumber: string,
+  message: string
+): string {
+  return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+}
+
+/**
+ * Fire-and-forget open. NOTE: only call this synchronously inside a
+ * click/tap handler — after any `await`, browsers treat window.open
+ * as an unsolicited popup and block it. For flows that save first
+ * (checkout), open a blank tab in the handler, then assign
+ * `popup.location.href = buildWhatsAppUrl(...)` once ready.
+ */
 export function sendWhatsAppOrder(
   phoneNumber: string,
   message: string
 ) {
-  const encoded = encodeURIComponent(message);
   window.open(
-    `https://wa.me/${phoneNumber}?text=${encoded}`,
+    buildWhatsAppUrl(phoneNumber, message),
     '_blank'
   );
 }

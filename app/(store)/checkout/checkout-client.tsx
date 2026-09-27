@@ -13,7 +13,7 @@ import {
 import { useCart } from '@/lib/cart-context';
 import {
   generateWhatsAppMessage,
-  sendWhatsAppOrder,
+  buildWhatsAppUrl,
 } from '@/lib/whatsapp';
 import { saveOrder } from '@/lib/orders';
 import { trackEvent } from '@/lib/analytics';
@@ -147,6 +147,12 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
       return;
     }
 
+    // Open the tab synchronously inside this tap handler: browsers only
+    // honour window.open while the user gesture is fresh. The order save
+    // below awaits the network, which would otherwise get the popup
+    // blocked (especially on mobile) and WhatsApp would never open.
+    const popup = window.open('', '_blank');
+
     const orderItems = items.map((item) => ({
       id: item.id,
       name: item.name,
@@ -187,7 +193,13 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
         deliveryAddress: deliveryMethod === 'delivery' ? deliveryAddress.trim() : undefined,
       });
 
-      sendWhatsAppOrder(BEILO_WHATSAPP, message);
+      const url = buildWhatsAppUrl(BEILO_WHATSAPP, message);
+      if (popup && !popup.closed) {
+        popup.location.href = url;
+      } else {
+        // Popups fully blocked: same-tab navigation always works.
+        window.location.href = url;
+      }
 
       trackEvent('whatsapp_checkout', {
         metadata: {
@@ -206,6 +218,8 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
       setSent({ total, method: deliveryMethod, store: selectedStore?.name || '', code: saved.code });
       clearCart();
     } catch (err: any) {
+      // Don't strand a blank tab when the save fails.
+      try { popup?.close(); } catch { /* already closed */ }
       setSendError(err?.message || 'Could not save your order. Please try again.');
     } finally {
       setSending(false);
