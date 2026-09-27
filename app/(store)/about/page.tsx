@@ -1,22 +1,43 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Users, Truck, Shield, Star, Globe, Music } from 'lucide-react';
+import { MapPin, Users, Truck, Shield, Star, Globe, Music, Banknote, RotateCcw, MessageCircle } from 'lucide-react';
+
+const FACTS = [
+  { icon: Banknote, label: 'Pay on delivery' },
+  { icon: Truck, label: 'K50 Lusaka delivery' },
+  { icon: RotateCcw, label: '7-day returns' },
+  { icon: MessageCircle, label: 'WhatsApp checkout' },
+];
 
 export default function AboutPage() {
   return (
     <main className="about-page">
       {/* Hero */}
-      <section className="about-hero">
+      <section className="about-hero about-hero--dark">
         <div className="about-hero-content">
-          <p className="about-hero-eyebrow">ABOUT BEILO</p>
+          <p className="about-hero-eyebrow">About BEILO · Lusaka, Zambia</p>
           <h1 className="about-hero-title">Built for the everyday.</h1>
           <p className="about-hero-text">
             We started BEILO with one goal: make fresh denim, solid essentials
             and real streetwear accessible across Zambia — without the markup.
           </p>
-          <Link href="/shop" className="btn btn-primary about-hero-cta">
-            Shop the collection
-          </Link>
+          <div className="about-hero-actions">
+            <Link href="/shop" className="btn btn-primary about-hero-cta">
+              Shop the collection
+            </Link>
+            <Link href="/stores" className="btn btn-ghost about-hero-ghost">
+              <MapPin size={16} strokeWidth={2} aria-hidden="true" />
+              <span>Find a store</span>
+            </Link>
+          </div>
+          <ul className="about-facts" aria-label="Why shop with BEILO">
+            {FACTS.map(({ icon: Icon, label }) => (
+              <li key={label} className="about-fact">
+                <Icon size={16} strokeWidth={2} aria-hidden="true" />
+                <span>{label}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
@@ -26,7 +47,7 @@ export default function AboutPage() {
           <div className="about-mission-image">
             <Image
               src="/products/beliloimg.avif"
-              alt="BEILO store interior"
+              alt="Model wearing a BEILO overshirt"
               fill
               sizes="100vw"
               priority
@@ -34,6 +55,7 @@ export default function AboutPage() {
             />
           </div>
           <div className="about-mission-text">
+            <p className="about-eyebrow">Designed in Lusaka</p>
             <h2 className="about-section-title">Why we exist</h2>
             <p className="about-section-body">
               Most people shop fast fashion because it&apos;s cheap, not because
@@ -107,7 +129,7 @@ export default function AboutPage() {
           <div className="about-stores-map">
             <Image
               src="/products/cozy.jpeg"
-              alt="Store interior"
+              alt="Folded BEILO streetwear pieces"
               fill
               sizes="100vw"
               className="about-stores-img"
@@ -119,31 +141,15 @@ export default function AboutPage() {
       {/* CTA strip */}
       <section className="about-cta">
         <div className="about-cta-inner">
-          {/* Social Proof (minimal cards) */}
-          <div className="about-cta-social">
-            <article className="about-cta-social-card">
-              <span className="about-cta-social-icon">
-                <Globe size={18} strokeWidth={2} aria-hidden="true" />
-              </span>
-              <div className="about-cta-social-stats">
-                <span className="about-cta-social-value">98K</span>
-                <span className="about-cta-social-label">Followers</span>
-                <span className="about-cta-social-sep" aria-hidden="true">·</span>
-                <span className="about-cta-social-value">4.3K</span>
-                <span className="about-cta-social-label">Posts</span>
-              </div>
-              <span className="about-cta-social-platform">Facebook</span>
-            </article>
-            <article className="about-cta-social-card">
-              <span className="about-cta-social-icon about-cta-social-icon--tiktok">
-                <Music size={18} strokeWidth={2} aria-hidden="true" />
-              </span>
-              <div className="about-cta-social-stats">
-                <span className="about-cta-social-value">29.8K</span>
-                <span className="about-cta-social-label">Followers</span>
-              </div>
-              <span className="about-cta-social-platform">TikTok</span>
-            </article>
+          <div className="about-cta-social" aria-label="BEILO community">
+            <span className="about-cta-pill">
+              <Globe size={16} strokeWidth={2} aria-hidden="true" />
+              <strong>98K</strong>&nbsp;followers · Facebook
+            </span>
+            <span className="about-cta-pill">
+              <Music size={16} strokeWidth={2} aria-hidden="true" />
+              <strong>29.8K</strong>&nbsp;followers · TikTok
+            </span>
           </div>
 
           <p className="about-cta-text">Ready to upgrade the rotation?</p>

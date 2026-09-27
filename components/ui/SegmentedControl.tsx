@@ -40,8 +40,8 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
           key={option.value}
           className={`opt ${value === option.value ? 'active' : ''}`}
           onClick={() => onChange(option.value)}
+          aria-pressed={value === option.value}
           style={{
-            background: 'transparent',
             border: 'none',
             cursor: 'pointer',
             fontFamily: 'var(--font-family-base)',

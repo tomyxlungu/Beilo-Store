@@ -88,7 +88,9 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
     return (
       <div className="co-page">
         <div className="co-success">
-          <CheckCircle2 size={56} className="co-success-icon" aria-hidden="true" />
+          <span className="co-success-badge">
+            <CheckCircle2 size={32} aria-hidden="true" />
+          </span>
           <h1 className="co-success-title">Order sent!</h1>
           <p className="co-success-text">
             Your order of K {sent.total.toLocaleString()} is on its way to us on WhatsApp. We&apos;ll confirm
@@ -100,7 +102,7 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
             </p>
           )}
           <p className="co-success-text">
-            Order code: <strong>{sent.code}</strong> — keep it to track your order.
+            Order code <code className="co-order-code">{sent.code}</code> — keep it to track your order.
           </p>
           <div className="co-success-actions">
             <Button variant="primary" size="lg" onClick={() => router.push('/shop')}>Continue Shopping</Button>
@@ -115,7 +117,9 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
     return (
       <div className="co-page">
         <div className="co-success">
-          <ShoppingBag size={56} className="bag-empty-icon" aria-hidden="true" />
+          <span className="co-success-badge is-muted">
+            <ShoppingBag size={30} aria-hidden="true" />
+          </span>
           <h1 className="co-success-title">No items to check out</h1>
           <p className="co-success-text">Your bag is empty. Add something you love first.</p>
           <Button variant="primary" size="lg" onClick={() => router.push('/shop')}>Go Shopping</Button>
@@ -209,7 +213,7 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
   };
 
   return (
-    <div className="co-page">
+    <div className="co-page co-checkout">
       <div className="bag-header">
         <div>
           <h1 className="bag-title">Checkout</h1>
@@ -219,16 +223,28 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
 
       <div className="grid bag-grid">
         <div className="span-8 co-form-col">
-          <section className="card co-card">
-            <h3>Your Details</h3>
+          <section className="card co-card" aria-labelledby="co-details-heading">
+            <div className="co-step-head">
+              <span className="co-step-num" aria-hidden="true">1</span>
+              <div>
+                <h3 id="co-details-heading">Your details</h3>
+                <p className="co-step-sub">We confirm every order with you on WhatsApp.</p>
+              </div>
+            </div>
             <div className="co-fields">
               <Input label="Full Name" placeholder="e.g. Chanda Mwila" value={customerName} onChange={(e) => { setCustomerName(e.target.value); setNameError(''); }} error={nameError} required />
               <Input label="Phone Number" placeholder="e.g. 097 1234567" value={customerPhone} inputMode="tel" onChange={(e) => { setCustomerPhone(e.target.value); setPhoneError(''); }} error={phoneError} hint="We confirm your order on WhatsApp" required />
             </div>
           </section>
 
-          <section className="card co-card">
-            <h3>How do you want it?</h3>
+          <section className="card co-card" aria-labelledby="co-method-heading">
+            <div className="co-step-head">
+              <span className="co-step-num" aria-hidden="true">2</span>
+              <div>
+                <h3 id="co-method-heading">Pickup or delivery?</h3>
+                <p className="co-step-sub">Pickup is free · Lusaka delivery is K 50.</p>
+              </div>
+            </div>
             <SegmentedControl options={[{ label: 'Store Pickup · Free', value: 'pickup' }, { label: 'Delivery · K50', value: 'delivery' }]} value={deliveryMethod} onChange={(v) => setDeliveryMethod(v as DeliveryMethod)} />
 
             {deliveryMethod === 'pickup' ? (
@@ -243,7 +259,7 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
                         <span className="co-store-name"><Store size={15} aria-hidden="true" /> {store.name}</span>
                         <span className="co-store-meta">{store.address} · {store.hours}</span>
                         {promo && (
-                          <span className="co-store-meta" style={{ color: '#b45309', fontWeight: 600 }}>
+                          <span className="co-store-promo">
                             ★ {promo.label}
                           </span>
                         )}
@@ -257,13 +273,10 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
                 <Input label="Delivery Address" placeholder="Plot, street, area, town" value={deliveryAddress} onChange={(e) => { setDeliveryAddress(e.target.value); setAddressError(''); }} error={addressError} hint="Lusaka delivery is K50 · countrywide on request" required />
               </div>
             )}
-            <div className="co-fields" style={{ marginTop: '12px' }}>
-              <p className="bag-summary-note" style={{ textAlign: 'left' }}>
-                <strong>{eta.label}</strong>
-                <br />
-                {eta.detail}
-              </p>
-            </div>
+            <p className="co-eta">
+              <strong>{eta.label}</strong>
+              <span>{eta.detail}</span>
+            </p>
           </section>
         </div>
 
@@ -285,10 +298,6 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
               <span className="co-row-icon">{deliveryMethod === 'delivery' ? <Truck size={14} aria-hidden="true" /> : <MapPin size={14} aria-hidden="true" />} {deliveryMethod === 'delivery' ? 'Delivery' : 'Pickup'}</span>
               <span>{deliveryFee === 0 ? 'Free' : `K ${deliveryFee}`}</span>
             </div>
-            <div className="bag-summary-row"><span>ETA</span><span style={{ textAlign: 'right' }}>{eta.label}</span></div>
-            {deliveryMethod === 'pickup' && storePromo && (
-              <div className="bag-summary-row"><span>Promo</span><span style={{ textAlign: 'right' }}>{storePromo.label}</span></div>
-            )}
             <div className="bag-summary-total"><span>Total</span><span>K {total.toLocaleString()}</span></div>
 
             <Button variant="primary" size="lg" fullWidth onClick={handleSendOrder} loading={sending} icon={<MessageCircle size={17} />}>
@@ -300,6 +309,16 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
             <p className="bag-summary-note">Opens WhatsApp with your order ready to send</p>
           </aside>
         </div>
+      </div>
+
+      <div className="bag-stickybar co-stickybar" aria-label="Send order bar">
+        <div className="bag-stickybar-total">
+          <span>Total</span>
+          <strong>K {total.toLocaleString()}</strong>
+        </div>
+        <Button variant="primary" size="lg" onClick={handleSendOrder} loading={sending} icon={<MessageCircle size={17} />}>
+          {sending ? 'Sending…' : 'Send Order'}
+        </Button>
       </div>
     </div>
   );

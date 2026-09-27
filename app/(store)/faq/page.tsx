@@ -11,12 +11,14 @@ export default async function FAQPage() {
     .select('*')
     .order('created_at');
 
-  const { data: categories } = await supabase
-    .from('categories')
-    .select('name')
-    .order('name');
-
-  const faqTopics = ['All', ...(categories?.map(c => c.name) ?? [])];
+  // Topics come from the FAQs themselves (in first-seen order),
+  // so chips always match real content.
+  const seen = new Set<string>();
+  for (const faq of faqs ?? []) {
+    const category = (faq as FAQItem).category?.trim();
+    if (category) seen.add(category);
+  }
+  const faqTopics = ['All', ...seen];
 
   return <FAQClient initialFaqs={(faqs ?? []) as FAQItem[]} faqTopics={faqTopics} />;
 }

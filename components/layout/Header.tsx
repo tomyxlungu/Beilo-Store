@@ -16,14 +16,11 @@ import {
   Menu,
   X,
   Search,
-  MapPin,
   User,
   ShoppingBag,
-  ChevronDown,
   Package,
   Heart,
   Settings,
-  LogOut,
 } from 'lucide-react';
 
 import Input from '@/components/ui/Input';
@@ -68,11 +65,6 @@ export default function Header() {
     useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] =
     useState(false);
-  const [locationDropdownOpen, setLocationDropdownOpen] =
-    useState(false);
-
-  const [selectedLocation, setSelectedLocation] =
-    useState('Lusaka');
 
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -106,7 +98,6 @@ export default function Header() {
 
       if (!target.closest('[data-header-dropdown]')) {
         setProfileDropdownOpen(false);
-        setLocationDropdownOpen(false);
       }
     };
 
@@ -130,7 +121,6 @@ export default function Header() {
   const closeAllMenus = () => {
     setMobileMenuOpen(false);
     setProfileDropdownOpen(false);
-    setLocationDropdownOpen(false);
   };
 
   const handleSearchSubmit = (
@@ -272,76 +262,6 @@ export default function Header() {
           {/* HEADER ACTIONS */}
           <div className="header-actions">
 
-            {/* LOCATION */}
-            <div
-              className="relative hide-mobile"
-              data-header-dropdown
-            >
-              <button
-                type="button"
-                className="location-button"
-                onClick={() => {
-                  setLocationDropdownOpen(
-                    (open) => !open
-                  );
-
-                  setProfileDropdownOpen(false);
-                }}
-                aria-expanded={
-                  locationDropdownOpen
-                }
-                aria-haspopup="menu"
-              >
-                <MapPin
-                  size={21}
-                  strokeWidth={2}
-                />
-
-                <span>
-                  {selectedLocation}
-                </span>
-
-                <ChevronDown
-                  size={17}
-                  strokeWidth={2}
-                  className={
-                    locationDropdownOpen
-                      ? 'rotate-180 transition-transform'
-                      : 'transition-transform'
-                  }
-                />
-              </button>
-
-              {locationDropdownOpen && (
-                <div className="header-dropdown location-dropdown">
-                  {[
-                    'Lusaka',
-                    'Ndola',
-                    'Kitwe',
-                  ].map((location) => (
-                    <button
-                      key={location}
-                      type="button"
-                      className="header-dropdown-item"
-                      onClick={() => {
-                        setSelectedLocation(
-                          location
-                        );
-
-                        setLocationDropdownOpen(
-                          false
-                        );
-                      }}
-                    >
-                      <MapPin size={17} />
-
-                      <span>{location}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* ACCOUNT */}
             <div
               className="relative"
@@ -358,10 +278,6 @@ export default function Header() {
                 onClick={() => {
                   setProfileDropdownOpen(
                     (open) => !open
-                  );
-
-                  setLocationDropdownOpen(
-                    false
                   );
                 }}
               >
@@ -443,25 +359,6 @@ export default function Header() {
                     <Settings size={17} />
                     <span>Settings</span>
                   </button>
-
-                  <div className="dropdown-divider" />
-
-                  <button
-                    type="button"
-                    className="header-dropdown-item logout-item"
-                    onClick={() => {
-                      console.log(
-                        'Sign out'
-                      );
-
-                      setProfileDropdownOpen(
-                        false
-                      );
-                    }}
-                  >
-                    <LogOut size={17} />
-                    <span>Sign out</span>
-                  </button>
                 </div>
               )}
             </div>
@@ -492,7 +389,7 @@ export default function Header() {
             {/* WHATSAPP */}
             <div className="hide-mobile">
               <WhatsAppButton
-                phoneNumber="260XXXXXXXXX"
+                phoneNumber="260971234567"
                 message="Hi BEILO, I need some help."
               />
             </div>

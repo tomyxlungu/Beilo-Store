@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -57,11 +57,33 @@ export default function CartClient({ slugById }: CartClientProps) {
     clearCart,
   } = useCart();
 
+  // Two-tap confirm so "Clear bag" can't wipe the bag by accident.
+  const [confirmClear, setConfirmClear] = useState(false);
+  const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (confirmTimer.current) clearTimeout(confirmTimer.current);
+    };
+  }, []);
+  const handleClearBag = () => {
+    if (confirmClear) {
+      if (confirmTimer.current) clearTimeout(confirmTimer.current);
+      setConfirmClear(false);
+      clearCart();
+    } else {
+      setConfirmClear(true);
+      if (confirmTimer.current) clearTimeout(confirmTimer.current);
+      confirmTimer.current = setTimeout(() => setConfirmClear(false), 3000);
+    }
+  };
+
   if (items.length === 0 && savedForLater.length === 0) {
     return (
       <div className="bag-page">
         <div className="bag-empty">
-          <ShoppingBag size={56} className="bag-empty-icon" aria-hidden="true" />
+          <span className="bag-empty-badge">
+            <ShoppingBag size={30} aria-hidden="true" />
+          </span>
           <h1 className="bag-empty-title">Your bag is empty</h1>
           <p className="bag-empty-text">
             Looks like you haven&apos;t added anything yet. Fresh drops are waiting.
@@ -78,7 +100,9 @@ export default function CartClient({ slugById }: CartClientProps) {
     return (
       <div className="bag-page">
         <div className="bag-empty">
-          <ShoppingBag size={56} className="bag-empty-icon" aria-hidden="true" />
+          <span className="bag-empty-badge">
+            <ShoppingBag size={30} aria-hidden="true" />
+          </span>
           <h1 className="bag-empty-title">Your bag is empty</h1>
           <p className="bag-empty-text">
             You have {savedForLater.length} saved item{savedForLater.length !== 1 ? 's' : ''} waiting below.
@@ -129,10 +153,17 @@ export default function CartClient({ slugById }: CartClientProps) {
         <div>
           <h1 className="bag-title">Shopping Bag</h1>
           <p className="bag-count">
-            {totalItems} item{totalItems !== 1 ? 's' : ''}
+            {totalItems} item{totalItems !== 1 ? 's' : ''} · K {totalPrice.toLocaleString()}
           </p>
         </div>
-        <button type="button" className="shop-chips-clear" onClick={clearCart}>Clear bag</button>
+        <button
+          type="button"
+          className={`shop-chips-clear${confirmClear ? ' is-confirm' : ''}`}
+          onClick={handleClearBag}
+          aria-live="polite"
+        >
+          {confirmClear ? 'Tap again to clear' : 'Clear bag'}
+        </button>
       </div>
 
       <div className="grid bag-grid">
@@ -163,24 +194,24 @@ export default function CartClient({ slugById }: CartClientProps) {
                     )}
 
                     {item.size && (
-                      <p className="bag-item-meta">Size: {item.size}</p>
+                      <span className="bag-size-chip">Size {item.size}</span>
                     )}
-                    <p className="bag-item-price">K {item.price.toLocaleString()}</p>
+                    <p className="bag-item-price">K {item.price.toLocaleString()} each</p>
 
                     <div className="bag-item-controls">
-                      <div className="pdp-qty" role="group" aria-label={`Quantity for ${item.name}`}>
+                      <div className="bag-qty" role="group" aria-label={`Quantity for ${item.name}`}>
                         <button
                           type="button"
-                          className="pdp-qty-btn"
+                          className="bag-qty-btn"
                           aria-label="Decrease quantity"
                           onClick={() => updateQuantity(item.id, item.quantity - 1, item.size)}
                         >
                           <Minus size={14} strokeWidth={2.5} />
                         </button>
-                        <span className="pdp-qty-value" aria-live="polite">{item.quantity}</span>
+                        <span className="bag-qty-value" aria-live="polite">{item.quantity}</span>
                         <button
                           type="button"
-                          className="pdp-qty-btn"
+                          className="bag-qty-btn"
                           aria-label="Increase quantity"
                           onClick={() => updateQuantity(item.id, item.quantity + 1, item.size)}
                         >
@@ -190,21 +221,20 @@ export default function CartClient({ slugById }: CartClientProps) {
 
                       <button
                         type="button"
-                        className="bag-remove"
+                        className="bag-icon-btn"
                         onClick={() => removeItem(item.id, item.size)}
                         aria-label={`Remove ${item.name} from bag`}
                       >
-                        <Trash2 size={14} />
-                        <span>Remove</span>
+                        <Trash2 size={16} />
                       </button>
 
                       <button
                         type="button"
-                        className="bag-remove"
+                        className="bag-save-btn"
                         onClick={() => saveForLater(item.id, item.size)}
                         aria-label={`Save ${item.name} for later`}
                       >
-                        <span>Save for later</span>
+                        Save for later
                       </button>
                     </div>
                   </div>
@@ -233,8 +263,13 @@ export default function CartClient({ slugById }: CartClientProps) {
             </div>
 
             <div className="bag-summary-row">
-              <span>Delivery</span>
-              <span>Free pickup · K50 Lusaka</span>
+              <span>Store pickup</span>
+              <span className="bag-free">Free</span>
+            </div>
+
+            <div className="bag-summary-row">
+              <span>Delivery in Lusaka</span>
+              <span>K 50</span>
             </div>
 
             <div className="bag-summary-total">
@@ -256,6 +291,16 @@ export default function CartClient({ slugById }: CartClientProps) {
             </div>
           </aside>
         </div>
+      </div>
+
+      <div className="bag-stickybar" aria-label="Checkout bar">
+        <div className="bag-stickybar-total">
+          <span>Total</span>
+          <strong>K {totalPrice.toLocaleString()}</strong>
+        </div>
+        <Button variant="primary" size="lg" onClick={() => router.push('/checkout')} icon={<ArrowRight size={17} />} iconPosition="right">
+          Checkout
+        </Button>
       </div>
 
       {savedForLater.length > 0 && (

@@ -14,10 +14,22 @@ export default async function ProductPage({ params }: PageProps) {
   const { slug } = await params;
   const supabase = await createServerSupabase();
 
+  // Accept URL-encoded slugs and tolerate historic slugs with spaces:
+  // try the raw value plus a dash-normalized variant.
+  // (Next usually decodes params already; the try/catch covers a
+  // literal % surviving into the slug, which must not 500 the page.)
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(slug).trim();
+  } catch {
+    decoded = slug.trim();
+  }
+  const candidates = [...new Set([slug, decoded, decoded.replace(/\s+/g, '-')])].filter(Boolean);
+
   const { data: product } = await supabase
     .from('products')
     .select(PRODUCT_SELECT)
-    .eq('slug', slug)
+    .in('slug', candidates)
     .eq('is_active', true)
     .single();
 

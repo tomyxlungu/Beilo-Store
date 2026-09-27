@@ -8,12 +8,56 @@ import {
   Phone,
   Mail,
   Clock,
-  Camera,
-  Globe,
-  AtSign,
   Send,
   MessageCircle,
 } from 'lucide-react';
+
+function BrandIcon({ size = 18, children }: { size?: number; children: React.ReactNode }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {children}
+    </svg>
+  );
+}
+
+function InstagramIcon({ size = 18 }: { size?: number }) {
+  return (
+    <BrandIcon size={size}>
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+    </BrandIcon>
+  );
+}
+
+function FacebookIcon({ size = 18 }: { size?: number }) {
+  return (
+    <BrandIcon size={size}>
+      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+    </BrandIcon>
+  );
+}
+
+function TwitterIcon({ size = 18 }: { size?: number }) {
+  return (
+    <BrandIcon size={size}>
+      <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z" />
+    </BrandIcon>
+  );
+}
+
+const WHATSAPP_NUMBER = '260971234567';
+const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=Hi%20BEILO%2C%20I%20need%20some%20help.`;
 
 const shopLinks = [
   { label: 'Shop All', href: '/shop' },
@@ -29,18 +73,15 @@ const helpLinks = [
   { label: 'Stores', href: '/stores' },
   { label: 'About us', href: '/about' },
   { label: 'FAQ', href: '/faq' },
-  { label: 'Shopping Bag', href: '/cart' },
-  { label: 'Checkout', href: '/checkout' },
-  { label: 'Wishlist', href: '/wishlist' },
   { label: 'Orders', href: '/orders' },
+  { label: 'Wishlist', href: '/wishlist' },
   { label: 'Account', href: '/account' },
-  { label: 'Stuff', href: '/admin/login' },
 ];
 
 const socials = [
-  { label: 'Instagram', href: 'https://instagram.com', Icon: Camera },
-  { label: 'Facebook', href: 'https://facebook.com', Icon: Globe },
-  { label: 'Twitter', href: 'https://twitter.com', Icon: AtSign },
+  { label: 'Instagram', href: 'https://instagram.com', Icon: InstagramIcon },
+  { label: 'Facebook', href: 'https://facebook.com', Icon: FacebookIcon },
+  { label: 'Twitter', href: 'https://twitter.com', Icon: TwitterIcon },
 ];
 
 export default function Footer() {
@@ -131,7 +172,7 @@ export default function Footer() {
                   className="footer-social"
                   aria-label={`BEILO on ${label}`}
                 >
-                  <Icon size={18} strokeWidth={2} />
+                  <Icon size={18} />
                 </a>
               ))}
             </div>
@@ -170,12 +211,16 @@ export default function Footer() {
             <h3 className="footer-heading">Talk to us</h3>
             <ul className="footer-contact">
               <li>
-                <Phone size={16} strokeWidth={2} aria-hidden="true" />
-                <span>+260 XXX XXX XXX</span>
+                <a href={`tel:+${WHATSAPP_NUMBER}`}>
+                  <Phone size={16} strokeWidth={2} aria-hidden="true" />
+                  <span>+260 97 123 4567</span>
+                </a>
               </li>
               <li>
-                <Mail size={16} strokeWidth={2} aria-hidden="true" />
-                <span>hello@beilo.store</span>
+                <a href="mailto:hello@beilo.store">
+                  <Mail size={16} strokeWidth={2} aria-hidden="true" />
+                  <span>hello@beilo.store</span>
+                </a>
               </li>
               <li>
                 <Clock size={16} strokeWidth={2} aria-hidden="true" />
@@ -184,7 +229,7 @@ export default function Footer() {
             </ul>
 
             <a
-              href="https://wa.me/260XXXXXXXXX?text=Hi%20BEILO%2C%20I%20need%20some%20help."
+              href={WHATSAPP_LINK}
               target="_blank"
               rel="noopener noreferrer"
               className="footer-whatsapp"
@@ -205,17 +250,6 @@ export default function Footer() {
           <p className="footer-payment">
             Pay on delivery &amp; mobile money accepted
           </p>
-          <div className="footer-legal">
-            <Link href="/faq" className="footer-link footer-link-small">
-              FAQ
-            </Link>
-            <Link href="/stores" className="footer-link footer-link-small">
-              Stores
-            </Link>
-            <Link href="/shop" className="footer-link footer-link-small">
-              Shop
-            </Link>
-          </div>
         </div>
       </div>
     </footer>

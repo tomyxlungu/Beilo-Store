@@ -55,7 +55,10 @@ export default function ProductClient({
   const { has, toggle, isHydrated } = useWishlist();
 
   const [activeImage, setActiveImage] = useState(0);
-  const [imgSrc, setImgSrc] = useState<string | null>(null);
+  const [dragX, setDragX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const dragStartX = useRef(0);
+  const thumbsRef = useRef<HTMLDivElement>(null);
   const [selectedSize, setSelectedSize] = useState<string>(
     () => (product && product.sizes.length === 1 ? product.sizes[0] : '')
   );
@@ -130,7 +133,6 @@ export default function ProductClient({
   }
 
   const gallery = product.images.length > 0 ? product.images : [CATEGORY_FALLBACKS[product.category] ?? '/products/cozy.jpeg'];
-  const mainSrc = imgSrc ?? gallery[activeImage];
   const { rating: ratingValue, count: ratingCount } = rating;
   const TRUNCATE_AT = 110;
   const isLong = product.description.length > TRUNCATE_AT;
@@ -142,27 +144,74 @@ export default function ProductClient({
     product.stockByStore.length > 0 &&
     product.stockByStore.every((stock) => stock.status === 'out-of-stock');
 
-  const requiresSize = product.sizes.length > 0;
-
-  const handleImageError = () => {
-    const fallback = CATEGORY_FALLBACKS[product.category] ?? '/products/cozy.jpeg';
-    if (mainSrc !== fallback) {
-      setImgSrc(fallback);
-    } else if (mainSrc !== '/products/cozy.jpeg') {
-      setImgSrc('/products/cozy.jpeg');
-    }
+  // Per-image fallback (a broken URL swaps to the category/cozy fallback once).
+  const [failedSrcs, setFailedSrcs] = useState<Set<string>>(new Set());
+  const srcFor = (src: string) => {
+    if (!failedSrcs.has(src)) return src;
+    const catFallback = CATEGORY_FALLBACKS[product.category] ?? '/products/cozy.jpeg';
+    if (src !== catFallback && !failedSrcs.has(catFallback)) return catFallback;
+    return '/products/cozy.jpeg';
   };
+  const handleSlideError = (src: string) => {
+    setFailedSrcs((prev) => (src === '/products/cozy.jpeg' || prev.has(src) ? prev : new Set(prev).add(src)));
+  };
+
+  const requiresSize = product.sizes.length > 0;
 
   const selectImage = (index: number) => {
     setActiveImage(index);
-    setImgSrc(null);
+  };
+
+  const goToImage = (index: number) => {
+    setActiveImage(((index % gallery.length) + gallery.length) % gallery.length);
+  };
+
+  // Slides reset whenever the product itself changes (client-side nav
+  // between products reuses this component and its state).
+  useEffect(() => {
+    setActiveImage(0);
+    setDragX(0);
+    setDragging(false);
+    setFailedSrcs(new Set());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id]);
+
+  // Keep the active thumbnail in view as the slides change.
+  useEffect(() => {
+    thumbsRef.current
+      ?.querySelector(`[data-index="${activeImage}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [activeImage]);
+
+  // Pointer drag: swipe/drag horizontally to change slides.
+  // Vertical touch scrolling still works via `touch-action: pan-y`.
+  const onStagePointerDown = (e: React.PointerEvent) => {
+    if (gallery.length < 2) return;
+    dragStartX.current = e.clientX;
+    setDragging(true);
+  };
+  const onStagePointerMove = (e: React.PointerEvent) => {
+    if (!dragging) return;
+    setDragX(e.clientX - dragStartX.current);
+  };
+  const endDrag = () => {
+    if (!dragging) return;
+    if (dragX <= -60) goToImage(activeImage + 1);
+    else if (dragX >= 60) goToImage(activeImage - 1);
+    setDragX(0);
+    setDragging(false);
+  };
+
+  const onStageKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowRight') goToImage(activeImage + 1);
+    else if (e.key === 'ArrowLeft') goToImage(activeImage - 1);
   };
 
   const buildItem = () => ({
     id: product.id,
     name: product.name,
     price: product.price,
-    image: gallery[0],
+    image: srcFor(gallery[0]),
     size: selectedSize || undefined,
   });
 
@@ -227,17 +276,45 @@ export default function ProductClient({
     <div className="pdp">
       <div className="pdp-top">
         <div className="pdp-gallery">
-          <div className="pdp-main pdp-hero-card">
-            <Image
-              key={mainSrc}
-              src={mainSrc}
-              alt={product.name}
-              fill
-              sizes="(max-width: 900px) 100vw, 50vw"
-              className="pdp-main-image"
-              priority
-              onError={handleImageError}
-            />
+          <div
+            className={`pdp-main pdp-hero-card pdp-stage${dragging ? ' is-dragging' : ''}`}
+            role="region"
+            aria-roledescription="carousel"
+            aria-label={`${product.name} images`}
+            tabIndex={gallery.length > 1 ? 0 : undefined}
+            onKeyDown={onStageKeyDown}
+            onPointerDown={onStagePointerDown}
+            onPointerMove={onStagePointerMove}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+            onPointerLeave={endDrag}
+          >
+            <div
+              className="pdp-track"
+              style={{ transform: `translateX(calc(${-activeImage * 100}% + ${dragX}px))` }}
+            >
+              {gallery.map((image, index) => (
+                <div
+                  key={`${image}-${index}`}
+                  className="pdp-slide"
+                  role="group"
+                  aria-roledescription="slide"
+                  aria-label={`Image ${index + 1} of ${gallery.length}`}
+                  aria-hidden={index !== activeImage}
+                >
+                  <Image
+                    src={srcFor(image)}
+                    alt={index === 0 ? product.name : `${product.name} — view ${index + 1}`}
+                    fill
+                    sizes="(max-width: 900px) 100vw, 50vw"
+                    className="pdp-main-image"
+                    priority={index === 0}
+                    draggable={false}
+                    onError={() => handleSlideError(image)}
+                  />
+                </div>
+              ))}
+            </div>
 
             <Link href="/shop" className="pdp-nav-btn pdp-nav-back" aria-label="Back to shop">
               <ArrowLeft size={17} strokeWidth={2} />
@@ -258,6 +335,30 @@ export default function ProductClient({
               />
             </button>
 
+            {gallery.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="pdp-arrow-btn pdp-arrow-prev"
+                  aria-label="Previous image"
+                  onClick={() => goToImage(activeImage - 1)}
+                >
+                  <ChevronLeft size={20} strokeWidth={2.5} />
+                </button>
+                <button
+                  type="button"
+                  className="pdp-arrow-btn pdp-arrow-next"
+                  aria-label="Next image"
+                  onClick={() => goToImage(activeImage + 1)}
+                >
+                  <ChevronRight size={20} strokeWidth={2.5} />
+                </button>
+                <span className="pdp-counter" aria-hidden="true">
+                  {activeImage + 1} / {gallery.length}
+                </span>
+              </>
+            )}
+
             {ratingCount > 0 && (
               <a href="#pdp-reviews" className="pdp-rating-pill" aria-label={`${ratingValue.toFixed(1)} stars, ${ratingCount} ratings. Go to reviews.`}>
                 <span className="pdp-rating-pill-value">{ratingValue.toFixed(1)}</span>
@@ -267,26 +368,32 @@ export default function ProductClient({
                 <ChevronRight size={13} strokeWidth={2.5} aria-hidden="true" />
               </a>
             )}
+            <span className="pdp-visually-hidden" role="status">
+              Image {activeImage + 1} of {gallery.length}
+            </span>
           </div>
 
           {gallery.length > 1 && (
-            <div className="pdp-thumbs">
+            <div className="pdp-thumbs" ref={thumbsRef}>
               {gallery.map((image, index) => (
                 <button
                   key={`${image}-${index}`}
                   type="button"
+                  data-index={index}
                   onClick={() => selectImage(index)}
                   aria-label={`View image ${index + 1}`}
                   aria-pressed={activeImage === index}
+                  aria-current={activeImage === index}
                   className={`pdp-thumb ${activeImage === index ? 'is-active' : ''}`}
                 >
                   <Image
-                    src={image}
+                    src={srcFor(image)}
                     alt=""
                     fill
                     sizes="120px"
                     className="pdp-thumb-image"
-                    onError={handleImageError}
+                    draggable={false}
+                    onError={() => handleSlideError(image)}
                   />
                 </button>
               ))}

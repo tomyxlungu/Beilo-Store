@@ -125,9 +125,20 @@ export default function ProductCard({
         </Link>
 
         <div className="product-card-pricing">
-          <span className="product-price">
-            K {product.price.toLocaleString()}
-          </span>
+          {product.salePrice ? (
+            <>
+              <span className="product-price product-price-sale">
+                K {product.salePrice.toLocaleString()}
+              </span>
+              <span className="product-price-original">
+                K {product.price.toLocaleString()}
+              </span>
+            </>
+          ) : (
+            <span className="product-price">
+              K {product.price.toLocaleString()}
+            </span>
+          )}
         </div>
 
         {onAddToCart && (

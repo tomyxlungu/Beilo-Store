@@ -356,6 +356,27 @@ async function seed() {
   if (blocksErr) console.log(`  ⚠ Homepage blocks: ${blocksErr.message}`);
   else console.log(`  ✓ ${blocks.length} homepage blocks`);
 
+  // ---- 6b. FAQs ----
+  console.log('Seeding FAQs...');
+  const faqs = [
+    { category: 'Ordering', question: 'How do I place an order?', answer: 'Add what you love to your bag, head to checkout and tap Send Order via WhatsApp. Your order opens in WhatsApp ready to send — we confirm it with you there and share your order code.' },
+    { category: 'Ordering', question: 'Do I need an account to shop?', answer: 'No. You can browse, fill your bag and check out as a guest — we only ask for your name and phone number so we can confirm your order on WhatsApp.' },
+    { category: 'Ordering', question: 'How do I track my order?', answer: 'Keep the order code we send you (it looks like BEI-1001). Message us on WhatsApp with the code any time and we will update you on pickup or delivery.' },
+    { category: 'Delivery & Pickup', question: 'How much is delivery?', answer: 'Store pickup is free. Delivery within Lusaka is a flat K50. Need it somewhere else in Zambia? Message us on WhatsApp and we will arrange countrywide delivery on request.' },
+    { category: 'Delivery & Pickup', question: 'How long will my order take?', answer: 'Pickup orders are usually ready the same day and we confirm your pickup time on WhatsApp. Lusaka delivery takes 1–2 working days and the rider confirms with you directly.' },
+    { category: 'Delivery & Pickup', question: 'Where can I pick up my order?', answer: 'Choose any BEILO store at checkout — you will see each store\u2019s address, hours and current in-store promos before you confirm. See them all on the Stores page.' },
+    { category: 'Payments', question: 'How do I pay for my order?', answer: 'Pay on delivery with cash or mobile money, or pay in store when you pick up. There is no online prepayment — you only pay when your order reaches you.' },
+    { category: 'Payments', question: 'Do you accept mobile money?', answer: 'Yes. Mobile money is accepted on delivery and in all our stores, alongside cash.' },
+    { category: 'Returns', question: 'What is your return policy?', answer: 'Changed your mind? You have 7 days to return your items. Message us on WhatsApp with your order code and we will arrange the return or exchange.' },
+    { category: 'Sizing', question: 'How do BEILO sizes run?', answer: 'Our fits run true to size — if you are between sizes, size up for oversized fits and down for a snug fit. Every product page shows available sizes, and wrong-size items can be exchanged within 7 days.' },
+  ];
+
+  const { error: faqsErr } = await supabase
+    .from('faqs')
+    .insert(faqs);
+  if (faqsErr) console.log(`  ⚠ FAQs: ${faqsErr.message}`);
+  else console.log(`  ✓ ${faqs.length} FAQs`);
+
   // ---- 7. Settings ----
   console.log('Seeding settings...');
   const settings = [

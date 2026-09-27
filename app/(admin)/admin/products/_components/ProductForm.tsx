@@ -67,6 +67,14 @@ function generateSlug(name: string): string {
     .replace(/(^-|-$)/g, '');
 }
 
+function sanitizeSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-');
+}
+
 function displayToNgwee(display: string): number {
   const num = parseFloat(display);
   if (isNaN(num) || num <= 0) return 0;
@@ -288,7 +296,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
       const salePriceMinor = form.salePriceDisplay ? displayToNgwee(form.salePriceDisplay) : null;
 
       const productPayload = {
-        slug: form.slug || generateSlug(form.name),
+        slug: sanitizeSlug(form.slug) || generateSlug(form.name),
         name: form.name.trim(),
         description: form.description.trim(),
         price_minor: priceMinor,
@@ -421,9 +429,9 @@ export default function ProductForm({ productId }: ProductFormProps) {
                 id="pf-slug"
                 placeholder="auto-generated"
                 value={form.slug}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ slug: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ slug: sanitizeSlug(e.target.value) })}
               />
-              <span className="m3-field-hint">Auto-generated from the name — editable. Used in the product URL.</span>
+              <span className="m3-field-hint">Auto-generated from the name — editable. Lowercase letters, numbers and dashes only.</span>
             </div>
             <div className="m3-field-row">
               <div className="m3-field">

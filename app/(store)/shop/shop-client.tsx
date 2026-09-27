@@ -22,7 +22,6 @@ import { Product } from '@/types/product';
 import { useCart } from '@/lib/cart-context';
 import ProductCard from '@/components/ui/ProductCard';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
 
 const CATEGORIES = [
   'All',
@@ -95,6 +94,19 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [isOnSale, setIsOnSale] = useState(false);
   const [isNewArrival, setIsNewArrival] = useState(paramsNew);
+
+  // Search lives in the global header (?search=). Since this page has no
+  // search input of its own, keep URL-driven state in sync when the URL
+  // changes from elsewhere (e.g. searching from the header while on /shop).
+  useEffect(() => {
+    setSearchQuery(paramsSearch);
+    setSelectedCategory(
+      paramsCategory && categories.includes(paramsCategory)
+        ? paramsCategory
+        : 'All'
+    );
+    setSortBy(paramsSort);
+  }, [paramsSearch, paramsCategory, paramsSort, categories]);
 
   const syncUrl = useCallback(
     (updates: { category?: string; search?: string; sort?: string }) => {
@@ -225,14 +237,6 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
     [syncUrl]
   );
 
-  const handleSearchSubmit = useCallback(
-    (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      syncUrl({ search: searchQuery });
-    },
-    [searchQuery, syncUrl]
-  );
-
   const handleSort = useCallback(
     (value: string) => {
       setSortBy(value);
@@ -240,6 +244,11 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
     },
     [syncUrl]
   );
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    syncUrl({ search: '' });
+  }, [syncUrl]);
 
   const handleAddToCart = useCallback(
     (product: Product) => {
@@ -260,6 +269,12 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
   }, []);
 
   const pageTitle = selectedCategory === 'All' ? 'All Products' : selectedCategory;
+  const pillCategories = ['All', ...categories];
+  const isFiltered =
+    filteredProducts.length !== initialProducts.length ||
+    selectedCategory !== 'All' ||
+    activeFilterCount > 0 ||
+    searchQuery.trim() !== '';
 
   return (
     <div className="shop-page">
@@ -267,42 +282,35 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
         <div>
           <h1 className="shop-title">{pageTitle}</h1>
           <p className="shop-count">
-            {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}
+            {isFiltered ? (
+              <>{filteredProducts.length} of {initialProducts.length} products</>
+            ) : (
+              <>{filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}</>
+            )}
           </p>
         </div>
       </div>
 
       <div className="shop-pills" role="tablist" aria-label="Categories">
-        {categories.map((category) => (
-          <button
-            key={category}
-            type="button"
-            role="tab"
-            aria-selected={selectedCategory === category}
-            className={`shop-pill ${selectedCategory === category ? 'shop-pill-active' : ''}`}
-            onClick={() => handleCategory(category)}
-          >
-            {category}
-          </button>
-        ))}
+        {pillCategories.map((category) => {
+          const active = selectedCategory === category;
+          return (
+            <button
+              key={category}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              className={`shop-pill ${active ? 'shop-pill-active' : ''}`}
+              onClick={() => handleCategory(category)}
+            >
+              {active && <Check size={14} strokeWidth={3} aria-hidden="true" />}
+              {category}
+            </button>
+          );
+        })}
       </div>
 
       <div className="shop-toolbar">
-        <form onSubmit={handleSearchSubmit} className="shop-search" role="search">
-          <Input
-            type="search"
-            placeholder="Search products..."
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            icon={<Search size={16} />}
-            size="md"
-            variant="default"
-            clearable
-            onClear={() => { setSearchQuery(''); syncUrl({ search: '' }); }}
-            aria-label="Search products"
-          />
-        </form>
-
         <div className="shop-sort-wrap">
           <select value={sortBy} onChange={(event) => handleSort(event.target.value)} className="shop-sort" aria-label="Sort products">
             {SORT_OPTIONS.map((option) => (
@@ -324,8 +332,14 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
         </button>
       </div>
 
-      {activeFilterCount > 0 && (
+      {(activeFilterCount > 0 || searchQuery.trim() !== '') && (
         <div className="shop-chips">
+          {searchQuery.trim() !== '' && (
+            <span className="shop-chip">
+              Search: {searchQuery.trim()}
+              <button type="button" onClick={handleClearSearch} aria-label="Clear search"><X size={13} /></button>
+            </span>
+          )}
           {selectedSizes.map((size) => (
             <span key={size} className="shop-chip">
               Size: {size}
@@ -392,7 +406,7 @@ export default function ShopClient({ initialProducts, categories }: ShopClientPr
           <section className="shop-drawer-section">
             <h3 className="shop-drawer-title">Category</h3>
             <div className="shop-category-list">
-              {categories.map((category) => (
+              {pillCategories.map((category) => (
                 <button key={category} type="button" onClick={() => handleCategory(category)} className={`shop-category-item ${selectedCategory === category ? 'is-active' : ''}`}>
                   <span>{category}</span>
                   {selectedCategory === category && <Check size={14} aria-hidden="true" />}

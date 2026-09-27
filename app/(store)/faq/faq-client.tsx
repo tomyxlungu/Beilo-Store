@@ -23,12 +23,21 @@ export default function FAQClient({ initialFaqs, faqTopics }: FAQClientProps) {
   const [query, setQuery] = useState('');
   const [topic, setTopic] = useState<string>('All');
 
+  const counts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const faq of initialFaqs) {
+      const category = faq.category?.trim() || 'General';
+      map.set(category, (map.get(category) ?? 0) + 1);
+    }
+    return map;
+  }, [initialFaqs]);
+
   const filtered = useMemo(() => {
     const term = query.toLowerCase().trim();
 
     return initialFaqs.filter((faq) => {
       const matchesTopic =
-        topic === 'All' || faq.category === topic;
+        topic === 'All' || (faq.category?.trim() || 'General') === topic;
 
       const matchesQuery =
         !term ||
@@ -38,6 +47,22 @@ export default function FAQClient({ initialFaqs, faqTopics }: FAQClientProps) {
       return matchesTopic && matchesQuery;
     });
   }, [query, topic, initialFaqs]);
+
+  // Browse mode (no search, All topics): group answers under topic
+  // headings. Searching or picking a topic flattens to one list.
+  const grouped = useMemo(() => {
+    if (topic !== 'All' || query.trim() !== '') return null;
+    const order = faqTopics.filter((t) => t !== 'All');
+    const groups: { topic: string; items: typeof filtered }[] = [];
+    for (const t of order) {
+      const items = filtered.filter((f) => (f.category?.trim() || 'General') === t);
+      if (items.length > 0) groups.push({ topic: t, items });
+    }
+    const covered = new Set(groups.flatMap((g) => g.items));
+    const rest = filtered.filter((f) => !covered.has(f));
+    if (rest.length > 0) groups.push({ topic: 'General', items: rest });
+    return groups;
+  }, [filtered, topic, query, faqTopics]);
 
   return (
     <div className="faq-page">
@@ -83,28 +108,32 @@ export default function FAQClient({ initialFaqs, faqTopics }: FAQClientProps) {
         role="tablist"
         aria-label="FAQ topics"
       >
-        {faqTopics.map((item) => (
-          <button
-            key={item}
-            type="button"
-            role="tab"
-            aria-selected={topic === item}
-            className={`shop-pill ${
-              topic === item
-                ? 'shop-pill-active'
-                : ''
-            }`}
-            onClick={() => setTopic(item)}
-          >
-            {item}
-          </button>
-        ))}
+        {faqTopics.map((item) => {
+          const active = topic === item;
+          const count = item === 'All' ? initialFaqs.length : counts.get(item) ?? 0;
+          return (
+            <button
+              key={item}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              className={`shop-pill ${
+                active ? 'shop-pill-active' : ''
+              }`}
+              onClick={() => setTopic(item)}
+            >
+              {item}
+              <span className="faq-topic-count" aria-hidden="true">{count}</span>
+            </button>
+          );
+        })}
       </div>
 
       <p className="faq-count" aria-live="polite">
         {filtered.length} answer
         {filtered.length !== 1 ? 's' : ''}
         {topic !== 'All' ? ` in ${topic}` : ''}
+        {query.trim() !== '' ? ` matching “${query.trim()}”` : ''}
       </p>
 
       <div className="grid faq-grid">
@@ -136,6 +165,19 @@ export default function FAQClient({ initialFaqs, faqTopics }: FAQClientProps) {
                   Clear search
                 </button>
               </div>
+            ) : grouped ? (
+              grouped.map((group) => (
+                <section key={group.topic} className="faq-group" aria-label={group.topic}>
+                  <h2 className="faq-group-title">
+                    {group.topic}
+                    <span className="faq-group-count">{group.items.length}</span>
+                  </h2>
+                  <Accordion
+                    items={group.items}
+                    allowMultiple
+                  />
+                </section>
+              ))
             ) : (
               <Accordion
                 items={filtered}
