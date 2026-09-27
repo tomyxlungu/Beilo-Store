@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabaseBrowser as supabase } from '@/lib/supabase/client';
-import { Save, Store, Globe, Bell } from 'lucide-react';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import { Save, Store, Globe, Bell, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function AdminSettings() {
   const [storeName, setStoreName] = useState('BEILO');
@@ -84,94 +82,88 @@ export default function AdminSettings() {
 
   if (fetching) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-        <div className="spinner" />
+      <div className="admin-page">
+        <div className="m3-loading" role="status" aria-label="Loading settings">
+          <div className="m3-progress"><span /></div>
+          <p className="m3-body-medium m3-on-surface-variant">Loading settings…</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="admin-page">
-      <div className="admin-page-header">
-        <h1>Settings</h1>
+      <div className="m3-page-head">
+        <div>
+          <h1 className="m3-headline-medium">Settings</h1>
+          <p className="m3-body-medium m3-on-surface-variant">Store identity, contact channel, and your account.</p>
+        </div>
       </div>
 
       <div style={{ maxWidth: '640px' }}>
         <form onSubmit={handleSave}>
           {error && (
-            <div className="admin-login-error" style={{ marginBottom: '16px' }}>{error}</div>
-          )}
-          <div className="admin-section" style={{ marginBottom: '24px' }}>
-            <div className="admin-section-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Store size={18} strokeWidth={2} />
-                <h2>Store</h2>
-              </div>
+            <div className="m3-error-block" role="alert" style={{ marginBottom: '16px' }}>
+              <AlertCircle size={16} aria-hidden="true" />
+              {error}
             </div>
-            <div style={{ padding: '0 20px 20px' }}>
-              <div style={{ marginBottom: '16px' }}>
-                <Input
-                  label="Store Name"
+          )}
+          <div className="admin-section" style={{ marginBottom: '16px' }}>
+            <div className="admin-section-header">
+              <span className="admin-section-icon"><Store size={20} strokeWidth={2} /></span>
+              <h2>Store</h2>
+            </div>
+            <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="m3-field">
+                <label htmlFor="settings-store-name">Store name</label>
+                <input
+                  id="settings-store-name"
                   value={storeName}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStoreName(e.target.value)}
                 />
               </div>
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ironclad-grey)', display: 'block', marginBottom: '6px' }}>
-                  Description
-                </label>
+              <div className="m3-field">
+                <label htmlFor="settings-store-desc">Description</label>
                 <textarea
+                  id="settings-store-desc"
                   value={storeDescription}
                   onChange={(e) => setStoreDescription(e.target.value)}
                   rows={3}
-                  style={{
-                    width: '100%',
-                    padding: '10px 16px',
-                    fontSize: '13px',
-                    fontFamily: 'var(--font-family-base)',
-                    borderRadius: '30px',
-                    border: '1.5px solid var(--urban-fog)',
-                    background: 'var(--canvas)',
-                    color: 'var(--charcoal-noir)',
-                    outline: 'none',
-                    resize: 'vertical',
-                    boxSizing: 'border-box',
-                  }}
                 />
+                <span className="m3-field-hint">Shown on the storefront and receipts.</span>
               </div>
             </div>
           </div>
 
-          <div className="admin-section" style={{ marginBottom: '24px' }}>
+          <div className="admin-section" style={{ marginBottom: '16px' }}>
             <div className="admin-section-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Globe size={18} strokeWidth={2} />
-                <h2>Contact</h2>
-              </div>
+              <span className="admin-section-icon"><Globe size={20} strokeWidth={2} /></span>
+              <h2>Contact</h2>
             </div>
             <div style={{ padding: '0 20px 20px' }}>
-              <div style={{ marginBottom: '16px' }}>
-                <Input
-                  label="WhatsApp Number"
+              <div className="m3-field">
+                <label htmlFor="settings-whatsapp">WhatsApp number</label>
+                <input
+                  id="settings-whatsapp"
                   placeholder="+260 XXX XXX XXX"
                   value={whatsappNumber}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWhatsappNumber(e.target.value)}
                 />
+                <span className="m3-field-hint">Customers check out through this number.</span>
               </div>
             </div>
           </div>
 
           <div className="admin-section" style={{ marginBottom: '24px' }}>
             <div className="admin-section-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Bell size={18} strokeWidth={2} />
-                <h2>Account</h2>
-              </div>
+              <span className="admin-section-icon"><Bell size={20} strokeWidth={2} /></span>
+              <h2>Account</h2>
             </div>
             <div style={{ padding: '0 20px 20px' }}>
-              <div style={{ marginBottom: '16px' }}>
-                <Input
-                  label="Admin Email"
+              <div className="m3-field">
+                <label htmlFor="settings-email">Admin email</label>
+                <input
+                  id="settings-email"
                   value={email}
                   disabled
                 />
@@ -179,14 +171,15 @@ export default function AdminSettings() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <Button type="submit" variant="primary" loading={loading}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button type="submit" className="m3-btn m3-btn-filled" disabled={loading}>
               <Save size={16} strokeWidth={2} />
-              <span>Save Settings</span>
-            </Button>
+              <span>{loading ? 'Saving…' : 'Save settings'}</span>
+            </button>
             {saved && (
-              <span style={{ fontSize: '13px', color: '#10b981', fontWeight: 500 }}>
-                Settings saved!
+              <span className="m3-chip-status" style={{ background: 'var(--m3-success-container)', color: 'var(--m3-on-success-container)' }}>
+                <CheckCircle2 size={14} aria-hidden="true" />
+                Settings saved
               </span>
             )}
           </div>

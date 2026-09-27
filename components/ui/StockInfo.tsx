@@ -13,6 +13,9 @@ interface StockInfoProps {
   style?: React.CSSProperties;
   onStoreClick?: (storeName: string) => void;
   ariaLabel?: string;
+  searchable?: boolean;
+  query?: string;
+  onQueryChange?: (q: string) => void;
 }
 
 const statusConfig: Record<StockStatus, { icon: React.ReactNode; color: string; label: string }> = {
@@ -41,14 +44,23 @@ const StockInfo: React.FC<StockInfoProps> = ({
   style,
   onStoreClick,
   ariaLabel = 'Stock availability',
+  searchable = false,
+  query = '',
+  onQueryChange,
 }) => {
   const [isExpanded, setIsExpanded] = React.useState<boolean>(showAll);
+  const [innerQuery, setInnerQuery] = React.useState('');
+  const activeQuery = (onQueryChange ? query : innerQuery).trim().toLowerCase();
 
-  const storesWithStock = stockByStore.filter(store => store.status !== 'out-of-stock');
-  const storesLowStock = stockByStore.filter(store => store.status === 'low-stock');
-  const storesOutOfStock = stockByStore.filter(store => store.status === 'out-of-stock');
+  const matches = (name: string) =>
+    !activeQuery || name.toLowerCase().includes(activeQuery);
 
-  const displayStores = isExpanded ? stockByStore : storesWithStock.slice(0, compact ? 1 : 2);
+  const storesWithStock = stockByStore.filter(store => store.status !== 'out-of-stock' && matches(store.storeName));
+  const storesLowStock = stockByStore.filter(store => store.status === 'low-stock' && matches(store.storeName));
+  const storesOutOfStock = stockByStore.filter(store => store.status === 'out-of-stock' && matches(store.storeName));
+  const filteredAll = stockByStore.filter((s) => matches(s.storeName));
+
+  const displayStores = isExpanded ? filteredAll : storesWithStock.slice(0, compact ? 1 : 2);
   const remainingStores = storesWithStock.length - (compact ? 1 : 2);
 
   if (stockByStore.length === 0) return null;
@@ -76,6 +88,23 @@ const StockInfo: React.FC<StockInfoProps> = ({
       color: 'var(--ironclad-grey)',
       ...style,
     }} role="status" aria-label={ariaLabel}>
+      {searchable && (
+        <input
+          type="search"
+          aria-label="Find in store"
+          placeholder="Find in store… e.g. Downtown"
+          value={onQueryChange ? query : innerQuery}
+          onChange={(e) => (onQueryChange ? onQueryChange(e.target.value) : setInnerQuery(e.target.value))}
+          style={{
+            width: '100%',
+            marginBottom: '8px',
+            padding: '8px 10px',
+            borderRadius: '10px',
+            border: '1px solid var(--urban-fog)',
+            fontSize: '12px',
+          }}
+        />
+      )}
       {/* Quick summary */}
       <div style={{
         display: 'flex',
@@ -142,6 +171,11 @@ const StockInfo: React.FC<StockInfoProps> = ({
             </button>
           );
         })}
+        {displayStores.length === 0 && (
+          <p style={{ fontSize: '11px', color: 'var(--ironclad-grey)' }}>
+            No stores match “{onQueryChange ? query : innerQuery}”. Try another branch.
+          </p>
+        )}
       </div>
 
       {/* Expand/Collapse */}

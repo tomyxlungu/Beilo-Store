@@ -2,9 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabaseBrowser as supabase } from '@/lib/supabase/client';
-import { UserPlus, Trash2, Shield, ShieldOff } from 'lucide-react';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import { UserPlus, Trash2, Shield, ShieldCheck, AlertCircle, Users } from 'lucide-react';
 
 interface StaffMember {
   id: string;
@@ -114,11 +112,14 @@ export default function AdminStaff() {
   if (loading) {
     return (
       <div className="admin-page">
-        <div className="admin-page-header">
-          <h1>Staff</h1>
+        <div className="m3-page-head">
+          <div>
+            <h1 className="m3-headline-medium">Staff</h1>
+          </div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-          <div className="spinner" />
+        <div className="m3-loading" role="status" aria-label="Loading staff">
+          <div className="m3-progress"><span /></div>
+          <p className="m3-body-medium m3-on-surface-variant">Loading staff…</p>
         </div>
       </div>
     );
@@ -126,65 +127,73 @@ export default function AdminStaff() {
 
   return (
     <div className="admin-page">
-      <div className="admin-page-header">
-        <h1>Staff</h1>
-        <p className="admin-page-subtitle">
-          {staff.length} staff member{staff.length !== 1 ? 's' : ''}
-        </p>
-        <Button variant="primary" onClick={() => setShowInvite(true)}>
-          <UserPlus size={16} strokeWidth={2} />
-          <span>Add Staff</span>
-        </Button>
+      <div className="m3-page-head">
+        <div>
+          <h1 className="m3-headline-medium">Staff</h1>
+          <p className="m3-body-medium m3-on-surface-variant">
+            {staff.length} staff member{staff.length !== 1 ? 's' : ''} with dashboard access
+          </p>
+        </div>
+        <div className="m3-page-actions">
+          <button type="button" className="m3-btn m3-btn-filled" onClick={() => setShowInvite(true)}>
+            <UserPlus size={16} strokeWidth={2} />
+            <span>Add staff</span>
+          </button>
+        </div>
       </div>
 
       {showInvite && (
         <div className="admin-modal-overlay" onClick={() => setShowInvite(false)}>
-          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Add Staff Account</h3>
-            <p style={{ fontSize: '13px', color: 'var(--ironclad-grey)', marginBottom: '16px' }}>
-              Create a new staff account for dashboard access.
-            </p>
+          <div className="admin-modal" role="dialog" aria-modal="true" aria-labelledby="invite-title" onClick={(e) => e.stopPropagation()}>
+            <h3 id="invite-title">Add staff account</h3>
+            <p>Create a new staff account for dashboard access.</p>
             <form onSubmit={handleInvite}>
               {inviteError && (
-                <div className="admin-login-error" style={{ marginBottom: '12px' }}>
+                <div className="m3-error-block" role="alert" style={{ marginBottom: '12px' }}>
+                  <AlertCircle size={16} aria-hidden="true" />
                   {inviteError}
                 </div>
               )}
-              <div style={{ marginBottom: '12px' }}>
-                <Input
-                  label="Email"
-                  type="email"
-                  required
-                  placeholder="staff@beilo.store"
-                  value={inviteEmail}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteEmail(e.target.value)}
-                />
-              </div>
-              <div style={{ marginBottom: '16px' }}>
-                <Input
-                  label="Password"
-                  type="password"
-                  required
-                  minLength={8}
-                  placeholder="Min 8 characters"
-                  value={invitePassword}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInvitePassword(e.target.value)}
-                />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div className="m3-field">
+                  <label htmlFor="invite-email">Email</label>
+                  <input
+                    id="invite-email"
+                    type="email"
+                    required
+                    placeholder="staff@beilo.store"
+                    value={inviteEmail}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteEmail(e.target.value)}
+                  />
+                </div>
+                <div className="m3-field">
+                  <label htmlFor="invite-password">Password</label>
+                  <input
+                    id="invite-password"
+                    type="password"
+                    required
+                    minLength={8}
+                    placeholder="Min 8 characters"
+                    value={invitePassword}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInvitePassword(e.target.value)}
+                  />
+                  <span className="m3-field-hint">At least 8 characters.</span>
+                </div>
               </div>
               <div className="admin-modal-actions">
                 <button
                   type="button"
                   onClick={() => setShowInvite(false)}
-                  className="btn btn-secondary"
+                  className="m3-btn m3-btn-text"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-primary"
+                  className="m3-btn m3-btn-filled"
                   disabled={inviteLoading || !inviteEmail || !invitePassword}
                 >
-                  {inviteLoading ? 'Creating...' : 'Create Account'}
+                  {inviteLoading ? 'Creating…' : 'Create account'}
                 </button>
               </div>
             </form>
@@ -192,39 +201,43 @@ export default function AdminStaff() {
         </div>
       )}
 
+      <div className="admin-card">
       <div className="admin-table-container">
         <table className="admin-table">
           <thead>
             <tr>
               <th>Email</th>
               <th>Role</th>
-              <th>Actions</th>
+              <th><span className="m3-body-small">Actions</span></th>
             </tr>
           </thead>
           <tbody>
             {staff.length === 0 ? (
               <tr>
-                <td colSpan={3} className="admin-table-empty">No staff members found</td>
+                <td colSpan={3} className="admin-table-empty">
+                  <div className="m3-empty">
+                    <span className="m3-empty-icon"><Users size={28} aria-hidden="true" /></span>
+                    <p className="m3-title-medium">No staff members yet</p>
+                    <p className="m3-body-medium m3-on-surface-variant">Invite your first team member to get started.</p>
+                  </div>
+                </td>
               </tr>
             ) : (
-              staff.map((member) => (
+              staff.map((member) => {
+                const isAdmin = member.role === 'admin';
+                return (
                 <tr key={member.id}>
                   <td>
                     <div style={{ fontWeight: 500 }}>{member.email}</div>
                   </td>
                   <td>
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '4px 10px',
-                      borderRadius: '9999px',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      background: member.role === 'admin' ? 'var(--charcoal-noir)' : 'var(--cloud-veil)',
-                      color: member.role === 'admin' ? 'var(--canvas)' : 'var(--ironclad-grey)',
-                    }}>
-                      {member.role === 'admin' ? <Shield size={12} /> : <ShieldOff size={12} />}
+                    <span
+                      className="m3-chip-status"
+                      style={isAdmin
+                        ? { background: 'var(--m3-primary-container)', color: 'var(--m3-on-primary-container)' }
+                        : { background: 'var(--m3-secondary-container)', color: 'var(--m3-on-secondary-container)' }}
+                    >
+                      {isAdmin ? <Shield size={12} aria-hidden="true" /> : <ShieldCheck size={12} aria-hidden="true" />}
                       {member.role}
                     </span>
                   </td>
@@ -232,28 +245,30 @@ export default function AdminStaff() {
                     <button
                       onClick={() => setDeleteConfirm(member.id)}
                       className="admin-action-btn danger"
-                      aria-label="Remove staff member"
+                      aria-label={`Remove ${member.email}`}
                     >
-                      <Trash2 size={16} strokeWidth={2} />
+                      <Trash2 size={18} strokeWidth={2} />
                     </button>
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
+      </div>
 
       {deleteConfirm && (
         <div className="admin-modal-overlay" onClick={() => setDeleteConfirm(null)}>
-          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Remove Staff Member?</h3>
+          <div className="admin-modal" role="alertdialog" aria-modal="true" aria-labelledby="remove-staff-title" onClick={(e) => e.stopPropagation()}>
+            <h3 id="remove-staff-title">Remove staff member?</h3>
             <p>This will revoke their dashboard access.</p>
             <div className="admin-modal-actions">
-              <button onClick={() => setDeleteConfirm(null)} className="btn btn-secondary">
+              <button onClick={() => setDeleteConfirm(null)} className="m3-btn m3-btn-text">
                 Cancel
               </button>
-              <button onClick={() => handleRemoveStaff(deleteConfirm)} className="btn btn-primary danger">
+              <button onClick={() => handleRemoveStaff(deleteConfirm)} className="m3-btn m3-btn-text is-danger">
                 Remove
               </button>
             </div>

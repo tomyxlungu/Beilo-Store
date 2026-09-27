@@ -3,10 +3,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabaseBrowser as supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Upload, X, Plus, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Save,
+  Upload,
+  X,
+  Plus,
+  Trash2,
+  Check,
+  Minus,
+  ImagePlus,
+  Tag,
+  Layers,
+  Eye,
+} from 'lucide-react';
 import Link from 'next/link';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
 
 const SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
@@ -62,6 +73,26 @@ function displayToNgwee(display: string): number {
   return Math.round(num * 100);
 }
 
+function StockStepper({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) {
+  return (
+    <span className="m3-stepper">
+      <button type="button" onClick={() => onChange(Math.max(0, value - 1))} aria-label={`Decrease ${label}`}>
+        <Minus size={16} />
+      </button>
+      <input
+        type="number"
+        min={0}
+        value={value}
+        onChange={(e) => onChange(Math.max(0, Number(e.target.value) || 0))}
+        aria-label={label}
+      />
+      <button type="button" onClick={() => onChange(value + 1)} aria-label={`Increase ${label}`}>
+        <Plus size={16} />
+      </button>
+    </span>
+  );
+}
+
 export default function ProductForm({ productId }: ProductFormProps) {
   const router = useRouter();
   const isEditing = !!productId;
@@ -88,6 +119,14 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [fetching, setFetching] = useState(isEditing);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const [dragActive, setDragActive] = useState(false);
+
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [error]);
 
   useEffect(() => {
     async function load() {
@@ -200,15 +239,15 @@ export default function ProductForm({ productId }: ProductFormProps) {
     });
   }
 
-  async function handleMultipleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  async function handleFiles(files: FileList | File[]) {
+    const list = Array.from(files);
+    if (list.length === 0) return;
 
     setUploading(true);
     setError('');
 
     try {
-      const uploadPromises = Array.from(files).map(async (file) => {
+      const uploadPromises = list.map(async (file) => {
         const fileExt = file.name.split('.').pop();
         const filePath = `products/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`;
         const { error: uploadError } = await supabase.storage.from('product-images').upload(filePath, file);
@@ -224,6 +263,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  }
+
+  async function handleMultipleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files) await handleFiles(e.target.files);
   }
 
   function removeImage(index: number) {
@@ -319,71 +362,105 @@ export default function ProductForm({ productId }: ProductFormProps) {
 
   if (fetching) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-        <div className="spinner" />
+      <div className="admin-page">
+        <div className="m3-loading" role="status" aria-label="Loading product">
+          <div className="m3-progress"><span /></div>
+          <p className="m3-body-medium m3-on-surface-variant">Loading product…</p>
+        </div>
       </div>
     );
   }
 
+  const flagRows = [
+    { key: 'isActive' as const, title: 'Active', desc: 'Visible on the store and searchable' },
+    { key: 'isNewArrival' as const, title: 'New arrival', desc: 'Badged as new across the store' },
+    { key: 'isTrending' as const, title: 'Trending', desc: 'Surfaced in trending rails' },
+  ];
+
   return (
     <div className="admin-page">
-      <div className="admin-page-header">
-        <Link href="/admin/products" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--ironclad-grey)', fontSize: '13px', fontWeight: 500, textDecoration: 'none', marginBottom: '8px' }}>
-          <ArrowLeft size={16} /> Back to products
-        </Link>
-        <h1>{isEditing ? 'Edit Product' : 'Add Product'}</h1>
+      <div className="m3-page-head m3-form-head">
+        <div>
+          <Link href="/admin/products" className="m3-back-link">
+            <ArrowLeft size={16} /> Back to products
+          </Link>
+          <h1 className="m3-headline-medium">{isEditing ? 'Edit product' : 'Add product'}</h1>
+          <p className="m3-body-medium m3-on-surface-variant">
+            {isEditing ? 'Update details, variants, stock and images.' : 'Fill in the details — variants and stock come next.'}
+          </p>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ maxWidth: '720px' }}>
+      <form id="product-form" onSubmit={handleSubmit} style={{ maxWidth: '720px' }}>
         {error && (
-          <div className="admin-login-error" style={{ marginBottom: '16px' }}>{error}</div>
+          <div ref={errorRef} className="m3-error-block" role="alert" style={{ marginBottom: '16px' }}>{error}</div>
         )}
 
-        <div className="admin-section" style={{ marginBottom: '24px' }}>
-          <div className="admin-section-header"><h2>Basic Info</h2></div>
-          <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <Input
-              label="Product Name"
-              required
-              placeholder="e.g. Classic Oversized Tee"
-              value={form.name}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ name: e.target.value })}
-            />
-            <Input
-              label="Slug"
-              placeholder="auto-generated"
-              value={form.slug}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ slug: e.target.value })}
-              hint="URL-friendly identifier"
-            />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <Input
-                label="Price (ZMW)"
-                type="number"
+        <div className="admin-section" style={{ marginBottom: '16px' }}>
+          <div className="admin-section-header">
+            <span className="admin-section-icon"><Tag size={20} strokeWidth={2} /></span>
+            <div>
+              <h2>Details</h2>
+              <p className="m3-body-small m3-on-surface-variant">Name, pricing, category and description.</p>
+            </div>
+          </div>
+          <div className="admin-section-body">
+            <div className="m3-field">
+              <label htmlFor="pf-name">Product name</label>
+              <input
+                id="pf-name"
                 required
-                min={0.01}
-                step={0.01}
-                placeholder="e.g. 250.00"
-                value={form.priceDisplay}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ priceDisplay: e.target.value })}
-              />
-              <Input
-                label="Sale Price (ZMW)"
-                type="number"
-                min={0}
-                step={0.01}
-                placeholder="Optional"
-                value={form.salePriceDisplay}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ salePriceDisplay: e.target.value })}
+                placeholder="e.g. Classic Oversized Tee"
+                value={form.name}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ name: e.target.value })}
               />
             </div>
-            <div>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ironclad-grey)', display: 'block', marginBottom: '6px' }}>Category</label>
+            <div className="m3-field">
+              <label htmlFor="pf-slug">Slug</label>
+              <input
+                id="pf-slug"
+                placeholder="auto-generated"
+                value={form.slug}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ slug: e.target.value })}
+              />
+              <span className="m3-field-hint">Auto-generated from the name — editable. Used in the product URL.</span>
+            </div>
+            <div className="m3-field-row">
+              <div className="m3-field">
+                <label htmlFor="pf-price">Price (ZMW)</label>
+                <input
+                  id="pf-price"
+                  type="number"
+                  required
+                  min={0.01}
+                  step={0.01}
+                  inputMode="decimal"
+                  placeholder="e.g. 250.00"
+                  value={form.priceDisplay}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ priceDisplay: e.target.value })}
+                />
+              </div>
+              <div className="m3-field">
+                <label htmlFor="pf-sale">Sale price (ZMW)</label>
+                <input
+                  id="pf-sale"
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  inputMode="decimal"
+                  placeholder="Optional"
+                  value={form.salePriceDisplay}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ salePriceDisplay: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="m3-field">
+              <label htmlFor="pf-category">Category</label>
               <select
+                id="pf-category"
                 value={form.categoryId}
                 onChange={(e) => updateForm({ categoryId: e.target.value })}
-                className="admin-filter-select"
-                style={{ width: '100%' }}
+                required
               >
                 <option value="">Select category</option>
                 {categories.map((c) => (
@@ -391,147 +468,165 @@ export default function ProductForm({ productId }: ProductFormProps) {
                 ))}
               </select>
             </div>
-            <Input
-              label="Low Stock Threshold"
-              type="number"
-              min={1}
-              placeholder="5"
-              value={form.lowStockThreshold}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ lowStockThreshold: e.target.value })}
-              hint="Alert when stock falls below this number"
-            />
-            <div>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ironclad-grey)', display: 'block', marginBottom: '6px' }}>Description</label>
+            <div className="m3-field">
+              <label htmlFor="pf-threshold">Low stock threshold</label>
+              <input
+                id="pf-threshold"
+                type="number"
+                min={1}
+                inputMode="numeric"
+                placeholder="5"
+                value={form.lowStockThreshold}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ lowStockThreshold: e.target.value })}
+              />
+              <span className="m3-field-hint">You get an inventory alert when stock falls below this number.</span>
+            </div>
+            <div className="m3-field">
+              <label htmlFor="pf-desc">Description</label>
               <textarea
+                id="pf-desc"
                 required
                 rows={4}
-                placeholder="Product description..."
+                placeholder="Fabric, fit, care — what should shoppers know?"
                 value={form.description}
                 onChange={(e) => updateForm({ description: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px 16px',
-                  fontSize: '13px',
-                  fontFamily: 'var(--font-family-base)',
-                  borderRadius: '16px',
-                  border: '1.5px solid var(--urban-fog)',
-                  background: 'var(--canvas)',
-                  color: 'var(--charcoal-noir)',
-                  outline: 'none',
-                  resize: 'vertical',
-                  boxSizing: 'border-box',
-                }}
               />
             </div>
           </div>
         </div>
 
-        <div className="admin-section" style={{ marginBottom: '24px' }}>
+        <div className="admin-section" style={{ marginBottom: '16px' }}>
           <div className="admin-section-header">
-            <h2>Variants</h2>
-            <button
-              type="button"
-              onClick={addVariant}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--charcoal-noir)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '13px',
-                fontWeight: 600,
-              }}
-            >
+            <span className="admin-section-icon"><Layers size={20} strokeWidth={2} /></span>
+            <div style={{ flex: 1 }}>
+              <h2>Variants &amp; stock</h2>
+              <p className="m3-body-small m3-on-surface-variant">Size/colour combinations with per-store quantities.</p>
+            </div>
+            <button type="button" onClick={addVariant} className="m3-btn m3-btn-tonal" style={{ height: '36px' }}>
               <Plus size={16} /> Add
             </button>
           </div>
-          <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="admin-section-body">
             {form.variants.length === 0 && (
-              <p style={{ fontSize: '13px', color: 'var(--ironclad-grey)' }}>No variants yet. Add size/colour combinations above.</p>
+              <p className="m3-body-medium m3-on-surface-variant">No variants yet — add size/colour combinations. Products without variants sell as a single item.</p>
             )}
             {form.variants.map((variant, idx) => (
-              <div
-                key={idx}
-                style={{
-                  border: '1px solid var(--cloud-veil)',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600 }}>Variant {idx + 1}</span>
+              <div key={idx} className="m3-variant-card">
+                <div className="m3-variant-head">
+                  <span className="m3-title-small">
+                    Variant {idx + 1}
+                    <span className="m3-body-small m3-on-surface-variant"> · {variant.size}{variant.colour ? ` · ${variant.colour}` : ''}</span>
+                  </span>
                   <button
                     type="button"
                     onClick={() => removeVariant(idx)}
-                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                    className="admin-action-btn danger"
+                    aria-label={`Remove variant ${idx + 1}`}
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={16} />
                   </button>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ironclad-grey)', display: 'block', marginBottom: '4px' }}>Size</label>
-                    <select
-                      value={variant.size}
-                      onChange={(e) => updateVariant(idx, { size: e.target.value })}
-                      className="admin-filter-select"
-                      style={{ width: '100%' }}
-                    >
-                      {SIZE_OPTIONS.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
+                <div>
+                  <span className="m3-field-label" id={`size-label-${idx}`}>Size</span>
+                  <div className="m3-chip-row" role="group" aria-labelledby={`size-label-${idx}`} style={{ marginTop: '8px' }}>
+                    {SIZE_OPTIONS.map((s) => {
+                      const selected = variant.size === s;
+                      return (
+                        <button
+                          key={s}
+                          type="button"
+                          className={`m3-filter-chip${selected ? ' is-selected' : ''}`}
+                          aria-pressed={selected}
+                          onClick={() => updateVariant(idx, { size: s })}
+                        >
+                          {selected && <Check size={14} aria-hidden="true" />}
+                          {s}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <Input
-                    label="Colour"
-                    placeholder="e.g. Black"
-                    value={variant.colour}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateVariant(idx, { colour: e.target.value })}
-                  />
-                  <Input
-                    label="SKU"
-                    placeholder="Optional"
-                    value={variant.sku}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateVariant(idx, { sku: e.target.value })}
-                  />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '8px' }}>
+                <div className="m3-field-row">
+                  <div className="m3-field">
+                    <label htmlFor={`colour-${idx}`}>Colour</label>
+                    <input
+                      id={`colour-${idx}`}
+                      placeholder="e.g. Black"
+                      value={variant.colour}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateVariant(idx, { colour: e.target.value })}
+                    />
+                  </div>
+                  <div className="m3-field">
+                    <label htmlFor={`sku-${idx}`}>SKU</label>
+                    <input
+                      id={`sku-${idx}`}
+                      placeholder="Optional"
+                      value={variant.sku}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateVariant(idx, { sku: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="m3-field">
+                  <label htmlFor={`override-${idx}`}>Variant price (ZMW)</label>
+                  <input
+                    id={`override-${idx}`}
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    inputMode="decimal"
+                    placeholder="Same as product price"
+                    value={variant.price_override_minor == null ? '' : String(variant.price_override_minor / 100)}
+                    onChange={(e) => {
+                      const v = e.target.value.trim();
+                      updateVariant(idx, { price_override_minor: v === '' ? null : displayToNgwee(v) });
+                    }}
+                  />
+                  <span className="m3-field-hint">Leave empty to use the product price.</span>
+                </div>
+                <div>
+                  <span className="m3-field-label">Stock per store</span>
+                  {stores.length === 0 && (
+                    <p className="m3-body-small m3-on-surface-variant" style={{ marginTop: '4px' }}>No stores found — stock can be added later.</p>
+                  )}
                   {stores.map((store) => {
                     const stockEntry = variant.stock.find((s) => s.store_id === store.id);
                     return (
-                      <div key={store.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ flex: 1, fontSize: '12px', color: 'var(--ironclad-grey)' }}>{store.name}</span>
-                        <input
-                          type="number"
-                          min={0}
+                      <div key={store.id} className="m3-stock-row">
+                        <span className="m3-stock-name">{store.name}</span>
+                        <StockStepper
                           value={stockEntry?.quantity ?? 0}
-                          onChange={(e) => updateVariantStock(idx, store.id, store.name, Number(e.target.value) || 0)}
-                          style={{
-                            width: '60px',
-                            padding: '6px 8px',
-                            fontSize: '13px',
-                            borderRadius: '8px',
-                            border: '1px solid var(--cloud-veil)',
-                            textAlign: 'center',
-                          }}
+                          onChange={(q) => updateVariantStock(idx, store.id, store.name, q)}
+                          label={`${store.name} stock for variant ${idx + 1}`}
                         />
                       </div>
                     );
                   })}
                 </div>
+                <span className="m3-switch-label">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={variant.is_active}
+                    aria-label={`Variant ${idx + 1} active`}
+                    className="m3-switch"
+                    onClick={() => updateVariant(idx, { is_active: !variant.is_active })}
+                  />
+                  <span className="m3-body-medium">Available for sale</span>
+                </span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="admin-section" style={{ marginBottom: '24px' }}>
-          <div className="admin-section-header"><h2>Images</h2></div>
-          <div style={{ padding: '0 20px 20px' }}>
+        <div className="admin-section" style={{ marginBottom: '16px' }}>
+          <div className="admin-section-header">
+            <span className="admin-section-icon"><ImagePlus size={20} strokeWidth={2} /></span>
+            <div>
+              <h2>Images</h2>
+              <p className="m3-body-small m3-on-surface-variant">First image is the cover. Drag &amp; drop or browse.</p>
+            </div>
+          </div>
+          <div className="admin-section-body">
             <input
               ref={fileInputRef}
               type="file"
@@ -539,103 +634,95 @@ export default function ProductForm({ productId }: ProductFormProps) {
               multiple
               onChange={handleMultipleImageUpload}
               style={{ display: 'none' }}
+              aria-hidden="true"
+              tabIndex={-1}
             />
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+              onDragLeave={() => setDragActive(false)}
+              onDrop={(e) => { e.preventDefault(); setDragActive(false); handleFiles(e.dataTransfer.files); }}
               disabled={uploading}
-              style={{
-                width: '100%',
-                padding: '32px',
-                borderRadius: '12px',
-                border: '2px dashed var(--cloud-veil)',
-                background: uploading ? 'var(--cloud-veil)' : 'transparent',
-                cursor: uploading ? 'wait' : 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '8px',
-                color: 'var(--ironclad-grey)',
-                fontSize: '13px',
-                fontWeight: 500,
-                transition: 'all 0.2s',
-              }}
+              className={`m3-dropzone${dragActive ? ' is-dragging' : ''}`}
             >
+              <span className="m3-dropzone-icon"><Upload size={24} strokeWidth={1.5} /></span>
               {uploading ? (
                 <>
-                  <div className="spinner" style={{ width: 24, height: 24, borderWidth: 2 }} />
-                  <span>Uploading...</span>
+                  <span>Uploading…</span>
+                  <span className="m3-progress" style={{ maxWidth: '240px' }}><span /></span>
                 </>
               ) : (
                 <>
-                  <Upload size={24} strokeWidth={1.5} />
-                  <span>Click to upload images</span>
-                  <span style={{ fontSize: '11px', color: 'var(--moonlit-silver)' }}>
-                    JPG, PNG, WebP or GIF (max 5MB each)
-                  </span>
+                  <span>{dragActive ? 'Drop images here' : 'Click to upload or drag images here'}</span>
+                  <span className="m3-body-small m3-on-surface-variant">JPG, PNG, WebP or GIF</span>
                 </>
               )}
             </button>
 
             {form.images.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
-                {form.images.map((img, i) => (
-                  <div key={i} style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--cloud-veil)' }}>
-                    <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(i)}
-                      style={{
-                        position: 'absolute', top: '2px', right: '2px',
-                        width: '20px', height: '20px', borderRadius: '50%',
-                        background: 'rgba(0,0,0,0.6)', color: 'white',
-                        border: 'none', cursor: 'pointer', fontSize: '12px',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            {form.images.length > 0 && (
-              <p style={{ fontSize: '12px', color: 'var(--ironclad-grey)', marginTop: '8px' }}>
-                {form.images.length} image{form.images.length !== 1 ? 's' : ''} uploaded
-              </p>
+              <>
+                <div className="m3-thumbs">
+                  {form.images.map((img, i) => (
+                    <div key={i} className="m3-thumb">
+                      <img src={img} alt={`Product image ${i + 1}`} />
+                      {i === 0 && <span className="m3-thumb-cover">Cover</span>}
+                      <button
+                        type="button"
+                        onClick={() => removeImage(i)}
+                        className="m3-thumb-remove"
+                        aria-label={`Remove image ${i + 1}`}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <p className="m3-body-small m3-on-surface-variant">
+                  {form.images.length} image{form.images.length !== 1 ? 's' : ''} uploaded
+                </p>
+              </>
             )}
           </div>
         </div>
 
         <div className="admin-section" style={{ marginBottom: '24px' }}>
-          <div className="admin-section-header"><h2>Flags</h2></div>
-          <div style={{ padding: '0 20px 20px', display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-            {[
-              { key: 'isActive' as const, label: 'Active (visible on store)' },
-              { key: 'isNewArrival' as const, label: 'New Arrival' },
-              { key: 'isTrending' as const, label: 'Trending' },
-            ].map(({ key, label }) => (
-              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}>
-                <input
-                  type="checkbox"
-                  checked={form[key]}
-                  onChange={(e) => updateForm({ [key]: e.target.checked })}
-                  style={{ width: '16px', height: '16px', accentColor: 'var(--charcoal-noir)' }}
+          <div className="admin-section-header">
+            <span className="admin-section-icon"><Eye size={20} strokeWidth={2} /></span>
+            <div>
+              <h2>Visibility</h2>
+              <p className="m3-body-small m3-on-surface-variant">Where and how this product appears.</p>
+            </div>
+          </div>
+          <div className="admin-section-body" style={{ paddingTop: '8px', paddingBottom: '8px' }}>
+            {flagRows.map(({ key, title, desc }) => (
+              <div key={key} className="m3-check-row">
+                <div className="m3-check-text">
+                  <strong>{title}</strong>
+                  <span>{desc}</span>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={form[key]}
+                  aria-label={title}
+                  className="m3-switch"
+                  onClick={() => updateForm({ [key]: !form[key] })}
                 />
-                {label}
-              </label>
+              </div>
             ))}
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <Button type="submit" variant="primary" loading={loading}>
-            <Save size={16} strokeWidth={2} />
-            <span>{isEditing ? 'Save Changes' : 'Create Product'}</span>
-          </Button>
-          <Link href="/admin/products">
-            <Button type="button" variant="secondary">Cancel</Button>
-          </Link>
+        <div className="m3-sticky-bar">
+          <span className="m3-sticky-hint">
+            {uploading ? 'Uploading images…' : `${form.images.length} image${form.images.length !== 1 ? 's' : ''} · ${form.variants.length} variant${form.variants.length !== 1 ? 's' : ''}`}
+          </span>
+          <Link href="/admin/products" className="m3-btn m3-btn-text">Cancel</Link>
+          <button type="submit" className="m3-btn m3-btn-filled" disabled={loading || uploading}>
+            <Save size={18} strokeWidth={2} />
+            <span>{loading ? 'Saving…' : isEditing ? 'Save changes' : 'Create product'}</span>
+          </button>
         </div>
       </form>
     </div>

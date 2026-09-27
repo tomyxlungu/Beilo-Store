@@ -98,38 +98,40 @@ function SalesChart({ data }: { data: { date: string; total: number }[] }) {
     return d.toLocaleDateString('en-ZM', { month: 'short', day: 'numeric' });
   }
 
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', height: 'auto' }}>
-      <defs>
-        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#0F766E" stopOpacity="0.15" />
-          <stop offset="100%" stopColor="#0F766E" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {yTicks.map((t, i) => (
-        <g key={i}>
-          <line x1={padding.left} y1={t.y} x2={w - padding.right} y2={t.y} stroke="#E0E0E0" strokeWidth="0.5" strokeDasharray="4,4" />
-          <text x={padding.left - 8} y={t.y + 4} textAnchor="end" fontSize="10" fill="#565656">
-            {t.valKwacha >= 1000 ? `${(t.valKwacha / 1000).toFixed(1)}K` : t.valKwacha.toFixed(0)}
-          </text>
+return (
+    <div className="admin-sales-chart-wrapper">
+      <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0F766E" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="#0F766E" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {yTicks.map((t, i) => (
+          <g key={i}>
+            <line x1={padding.left} y1={t.y} x2={w - padding.right} y2={t.y} stroke="#E0E0E0" strokeWidth="0.5" strokeDasharray="4,4" />
+            <text x={padding.left - 8} y={t.y + 4} textAnchor="end" fontSize="10" fill="#565656">
+              {t.valKwacha >= 1000 ? `${(t.valKwacha / 1000).toFixed(1)}K` : t.valKwacha.toFixed(0)}
+            </text>
+          </g>
+        ))}
+        <path d={areaPath} fill="url(#areaGrad)" />
+        <path d={linePath} fill="none" stroke="#0F766E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx={peakX} cy={peakY} r={4.5} fill="#0F766E" stroke="#fff" strokeWidth={2} />
+        <g transform={`translate(${Math.min(Math.max(peakX - 34, 4), w - 76)}, ${Math.max(peakY - 52, 0)})`}>
+          <rect width={72} height={38} rx={8} fill="#1f2937" />
+          <text x={36} y={15} textAnchor="middle" fontSize={8} fill="#9ca3af" fontWeight={600}>{peakLabel}</text>
+          <text x={36} y={30} textAnchor="middle" fontSize={11} fill="#fff" fontWeight={700}>{peakValueLabel}</text>
         </g>
-      ))}
-      <path d={areaPath} fill="url(#areaGrad)" />
-      <path d={linePath} fill="none" stroke="#0F766E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={peakX} cy={peakY} r={4.5} fill="#0F766E" stroke="#fff" strokeWidth={2} />
-      <g transform={`translate(${Math.min(Math.max(peakX - 34, 4), w - 76)}, ${Math.max(peakY - 52, 0)})`}>
-        <rect width={72} height={38} rx={8} fill="#1f2937" />
-        <text x={36} y={15} textAnchor="middle" fontSize={8} fill="#9ca3af" fontWeight={600}>{peakLabel}</text>
-        <text x={36} y={30} textAnchor="middle" fontSize={11} fill="#fff" fontWeight={700}>{peakValueLabel}</text>
-      </g>
-      {points.map((p, i) => (
-        i % Math.max(1, Math.floor(data.length / 6)) === 0 && (
-          <text key={i} x={Number.isFinite(p.x) ? p.x : 0} y={h - 8} textAnchor="middle" fontSize="9" fill="#565656">
-            {shortDate(p.date)}
-          </text>
-        )
-      ))}
-    </svg>
+        {points.map((p, i) => (
+          i % Math.max(1, Math.floor(data.length / 6)) === 0 && (
+            <text key={i} x={Number.isFinite(p.x) ? p.x : 0} y={h - 8} textAnchor="middle" fontSize="9" fill="#565656">
+              {shortDate(p.date)}
+            </text>
+          )
+        ))}
+      </svg>
+    </div>
   );
 }
 
@@ -369,8 +371,9 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-        <div className="spinner" />
+      <div className="m3-loading" role="status" aria-label="Loading dashboard">
+        <div className="m3-progress"><span /></div>
+        <p className="m3-body-medium m3-on-surface-variant">Loading overview…</p>
       </div>
     );
   }
@@ -386,6 +389,15 @@ export default function AdminDashboard() {
 
   return (
     <div className="admin-dashboard">
+      {/* Page header */}
+      <div className="m3-page-head">
+        <p className="m3-body-medium m3-on-surface-variant">Store performance for the last 30 days.</p>
+        <div className="m3-page-actions">
+          <a href="/admin/orders" className="m3-btn m3-btn-tonal">View orders</a>
+          <a href="/admin/products/new" className="m3-btn m3-btn-filled">Add product</a>
+        </div>
+      </div>
+
       {/* KPI Cards */}
       <div className="admin-kpi-grid">
         {kpiCards.map((kpi) => (
@@ -410,11 +422,11 @@ export default function AdminDashboard() {
         <div className="admin-card admin-sales-card">
           <div className="admin-card-header">
             <div>
-              <h3 className="admin-card-title admin-card-title-upper">Sales Overview</h3>
-              <p className="admin-card-subtitle">{formatCurrency(stats.totalRevenue)} <span className={`admin-card-trend ${stats.revenueUp ? 'up' : 'down'}`}>{stats.revenueUp ? '▲' : '▼'} {stats.revenueTrend}</span></p>
+              <h3 className="admin-card-title">Sales overview</h3>
+              <p className="admin-card-subtitle">{formatCurrency(stats.totalRevenue)} <span className={`m3-chip-status admin-card-trend ${stats.revenueUp ? 'up' : 'down'}`}>{stats.revenueUp ? '▲' : '▼'} {stats.revenueTrend}</span></p>
               <p className="admin-card-vs">vs previous 30 days</p>
             </div>
-            <span className="admin-card-badge">Daily ⌄</span>
+            <span className="admin-card-badge">Daily</span>
           </div>
           <div className="admin-sales-chart">
             <SalesChart data={salesData} />
@@ -423,8 +435,11 @@ export default function AdminDashboard() {
 
         <div className="admin-card admin-inventory-card">
           <div className="admin-card-header">
-            <h3 className="admin-card-title"><span className="admin-dot admin-dot-orange" />Inventory Alerts</h3>
-            <a href="/admin/products" className="admin-card-link">View all &gt;</a>
+            <div>
+              <h3 className="admin-card-title">Inventory alerts</h3>
+              <p className="admin-card-sub">Running low across variants</p>
+            </div>
+            <a href="/admin/products" className="admin-card-link">View all</a>
           </div>
           <div className="admin-inventory-list">
             {lowStockProducts.length === 0 ? (
@@ -438,7 +453,7 @@ export default function AdminDashboard() {
                     <span className="admin-inventory-sku">SKU: {p.sku}</span>
                   </div>
                   <div className="admin-inventory-right">
-                    <span className={`admin-inventory-badge ${p.quantity === 0 ? 'out' : 'low'}`}>
+                    <span className={`m3-chip-status admin-inventory-badge ${p.quantity === 0 ? 'out' : 'low'}`}>
                       {p.quantity} left
                     </span>
                     <span className="admin-inventory-status">{p.quantity <= 12 ? 'Running low' : 'Low stock'}</span>
@@ -455,7 +470,7 @@ export default function AdminDashboard() {
         <div className="admin-card admin-orders-card">
           <div className="admin-card-header">
             <div>
-              <h3 className="admin-card-title">Recent Orders</h3>
+              <h3 className="admin-card-title">Recent orders</h3>
               <p className="admin-card-sub">Latest checkout updates</p>
             </div>
             <a href="/admin/orders" className="admin-card-link">View all</a>
@@ -484,7 +499,7 @@ export default function AdminDashboard() {
                         <td>{formatDate(order.created_at)}</td>
                         <td style={{ fontWeight: 600 }}>{formatCurrencyFull(order.total_minor)}</td>
                         <td>
-                          <span className="admin-status-badge" style={{ background: sc.bg, color: sc.color }}>
+                          <span className="m3-chip-status admin-status-badge" style={{ background: sc.bg, color: sc.color }}>
                             {sc.label}
                           </span>
                         </td>
@@ -508,7 +523,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="admin-order-right">
                     <span className="admin-order-amount">{formatCurrencyFull(order.total_minor)}</span>
-                    <span className="admin-status-badge" style={{ background: sc.bg, color: sc.color }}>{sc.label}</span>
+                    <span className="m3-chip-status admin-status-badge" style={{ background: sc.bg, color: sc.color }}>{sc.label}</span>
                   </div>
                 </div>
               );
@@ -518,7 +533,10 @@ export default function AdminDashboard() {
 
         <div className="admin-card admin-segments-card">
           <div className="admin-card-header">
-            <h3 className="admin-card-title">Customer Segments</h3>
+            <div>
+              <h3 className="admin-card-title">Customer segments</h3>
+              <p className="admin-card-sub">By order frequency</p>
+            </div>
           </div>
           <div className="admin-segments-body">
             {segments.length === 0 ? (
@@ -534,7 +552,7 @@ export default function AdminDashboard() {
       <div className="admin-card admin-top-card">
         <div className="admin-card-header">
           <div>
-            <h3 className="admin-card-title">Top Products</h3>
+            <h3 className="admin-card-title">Top products</h3>
             <p className="admin-card-sub">Best sellers by volume &amp; revenue</p>
           </div>
           <a href="/admin/products" className="admin-card-link">View all</a>

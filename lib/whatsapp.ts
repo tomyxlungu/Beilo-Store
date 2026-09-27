@@ -17,6 +17,8 @@ export interface WhatsAppOrder {
   deliveryMethod: 'pickup' | 'delivery';
   pickupStore?: string;
   deliveryAddress?: string;
+  storePromo?: string;
+  readyTime?: string;
 }
 
 const formatK = (value: number) =>
@@ -60,6 +62,13 @@ export function generateWhatsAppMessage(
     message += `Delivery Address: ${
       order.deliveryAddress ?? '—'
     }\n`;
+  }
+
+  if (order.storePromo) {
+    message += `Store Promo: ${order.storePromo}\n`;
+  }
+  if (order.readyTime) {
+    message += `ETA: ${order.readyTime}\n`;
   }
 
   message += `\nPlease confirm availability. Thank you!`;

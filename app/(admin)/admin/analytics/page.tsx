@@ -279,20 +279,8 @@ function InteractiveChart({
               type="button"
               onClick={() => onToggle(t)}
               title={off ? `Show ${TYPE_META[t].label}` : `Hide ${TYPE_META[t].label}`}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                fontSize: 12,
-                fontWeight: 600,
-                color: off ? '#c4c9d1' : '#4b5563',
-                background: off ? '#f3f4f6' : '#fff',
-                border: '1px solid #e5e7eb',
-                borderRadius: 999,
-                padding: '5px 12px',
-                cursor: 'pointer',
-                opacity: off ? 0.7 : 1,
-              }}
+              aria-pressed={!off}
+              className={`m3-legend-chip${off ? ' is-off' : ''}`}
             >
               <span style={{ width: 10, height: 3, borderRadius: 2, background: off ? '#d1d5db' : TYPE_META[t].color }} />
               {TYPE_META[t].label}
@@ -437,8 +425,16 @@ export default function AdminAnalytics() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-        <div className="spinner" />
+      <div className="admin-page">
+        <div className="m3-page-head">
+          <div>
+            <h1 className="m3-headline-medium">Analytics</h1>
+          </div>
+        </div>
+        <div className="m3-loading" role="status" aria-label="Loading analytics">
+          <div className="m3-progress"><span /></div>
+          <p className="m3-body-medium m3-on-surface-variant">Loading analytics…</p>
+        </div>
       </div>
     );
   }
@@ -447,36 +443,35 @@ export default function AdminAnalytics() {
 
   return (
     <div className="admin-dashboard">
-      <div className="admin-page-header" style={{ marginBottom: 0 }}>
-        <p className="admin-page-subtitle">
-          {totalEvents.toLocaleString()} events · {uniqueSessions.toLocaleString()} sessions
-        </p>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          {RANGES.map((r) => (
-            <button
-              key={r.label}
-              type="button"
-              onClick={() => setRangeDays(r.days)}
-              className="admin-filter-select"
-              style={{
-                cursor: 'pointer',
-                minWidth: 0,
-                fontWeight: (rangeDays === r.days) ? 700 : 500,
-                borderColor: (rangeDays === r.days) ? '#0F766E' : undefined,
-                color: (rangeDays === r.days) ? '#0F766E' : undefined,
-              }}
-            >
-              {r.label}
-            </button>
-          ))}
+      <div className="m3-page-head" style={{ marginBottom: 0 }}>
+        <div>
+          <h1 className="m3-headline-medium">Analytics</h1>
+          <p className="m3-body-medium m3-on-surface-variant">
+            {totalEvents.toLocaleString()} events · {uniqueSessions.toLocaleString()} sessions
+          </p>
+        </div>
+        <div className="m3-page-actions" role="group" aria-label="Date range">
+          {RANGES.map((r) => {
+            const selected = rangeDays === r.days;
+            return (
+              <button
+                key={r.label}
+                type="button"
+                onClick={() => setRangeDays(r.days)}
+                className={`m3-filter-chip${selected ? ' is-selected' : ''}`}
+                aria-pressed={selected}
+              >
+                {r.label}
+              </button>
+            );
+          })}
           <button
             type="button"
             onClick={() => fetchAnalytics(true)}
-            className="admin-filter-select"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+            className="m3-btn m3-btn-tonal"
             disabled={refreshing}
           >
-            <RefreshCw size={14} style={{ animation: refreshing ? 'spin 1s linear infinite' : undefined }} />
+            <RefreshCw size={16} style={{ animation: refreshing ? 'spin 1s linear infinite' : undefined }} />
             {refreshing ? 'Refreshing…' : 'Refresh'}
           </button>
         </div>
@@ -492,6 +487,7 @@ export default function AdminAnalytics() {
               type="button"
               onClick={() => toggleSeries(t)}
               title={off ? `Show ${meta.label} on the chart` : `Hide ${meta.label} from the chart`}
+              aria-pressed={!off}
               className="admin-kpi-card"
               style={{ cursor: 'pointer', textAlign: 'left', opacity: off ? 0.55 : 1, width: '100%' }}
             >
@@ -499,7 +495,7 @@ export default function AdminAnalytics() {
                 <div className="admin-kpi-icon" style={{ background: off ? '#f3f4f6' : meta.bg, color: off ? '#9ca3af' : meta.color }}>
                   <meta.icon size={20} />
                 </div>
-                <p className="admin-kpi-trend up">
+                <p className={`admin-kpi-trend ${off ? '' : 'up'}`}>
                   <TrendingUp size={12} />
                   {uniqueSessions > 0 ? `${(counts[t] / uniqueSessions).toFixed(1)}/session` : '—'}
                 </p>
@@ -515,11 +511,11 @@ export default function AdminAnalytics() {
         <div className="admin-card admin-sales-card">
           <div className="admin-card-header">
             <div>
-              <h3 className="admin-card-title admin-card-title-upper">
+              <h3 className="admin-card-title">
                 Events — {rangeDays === 0 ? 'all time' : `last ${rangeDays} days`}
               </h3>
               <p className="admin-card-subtitle">
-                {totalEvents.toLocaleString()} <span className="admin-card-trend up">total events</span>
+                {totalEvents.toLocaleString()} <span className="m3-chip-status admin-card-trend up">total events</span>
               </p>
               <p className="admin-card-vs">Hover the chart for daily values · click legend or cards to toggle series</p>
             </div>
@@ -531,7 +527,10 @@ export default function AdminAnalytics() {
 
         <div className="admin-card admin-inventory-card">
           <div className="admin-card-header">
-            <h3 className="admin-card-title"><span className="admin-dot admin-dot-orange" />Top Viewed Products</h3>
+            <div>
+              <h3 className="admin-card-title">Top viewed products</h3>
+              <p className="admin-card-sub">Most product page views</p>
+            </div>
           </div>
           <div className="admin-inventory-list">
             {topProducts.length === 0 ? (
@@ -555,7 +554,7 @@ export default function AdminAnalytics() {
         <div className="admin-card admin-orders-card">
           <div className="admin-card-header">
             <div>
-              <h3 className="admin-card-title">Conversion Funnel</h3>
+              <h3 className="admin-card-title">Conversion funnel</h3>
               <p className="admin-card-sub">Page view → product view → bag → checkout · hover a step for detail</p>
             </div>
           </div>
@@ -564,8 +563,10 @@ export default function AdminAnalytics() {
 
         <div className="admin-card admin-segments-card">
           <div className="admin-card-header">
-            <h3 className="admin-card-title">Recent Events</h3>
-            <span className="admin-card-badge">{recentEvents.length} latest</span>
+            <div>
+              <h3 className="admin-card-title">Recent events</h3>
+              <p className="admin-card-sub">{recentEvents.length} latest tracked</p>
+            </div>
           </div>
           <div className="admin-inventory-list">
             {recentEvents.length === 0 ? (

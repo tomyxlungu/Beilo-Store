@@ -46,14 +46,18 @@ export default function CartClient({ slugById }: CartClientProps) {
   const router = useRouter();
   const {
     items,
+    savedForLater,
     updateQuantity,
     removeItem,
+    saveForLater,
+    moveToBag,
+    removeSaved,
     totalItems,
     totalPrice,
     clearCart,
   } = useCart();
 
-  if (items.length === 0) {
+  if (items.length === 0 && savedForLater.length === 0) {
     return (
       <div className="bag-page">
         <div className="bag-empty">
@@ -66,6 +70,55 @@ export default function CartClient({ slugById }: CartClientProps) {
             Continue Shopping
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="bag-page">
+        <div className="bag-empty">
+          <ShoppingBag size={56} className="bag-empty-icon" aria-hidden="true" />
+          <h1 className="bag-empty-title">Your bag is empty</h1>
+          <p className="bag-empty-text">
+            You have {savedForLater.length} saved item{savedForLater.length !== 1 ? 's' : ''} waiting below.
+          </p>
+          <Button variant="primary" size="lg" onClick={() => router.push('/shop')}>
+            Continue Shopping
+          </Button>
+        </div>
+        <section aria-label="Saved for later">
+          <div className="bag-header">
+            <div>
+              <h2 className="bag-title">Saved for later</h2>
+              <p className="bag-count">{savedForLater.length} saved</p>
+            </div>
+          </div>
+          <ul className="bag-list">
+            {savedForLater.map((item) => (
+              <li key={`saved-${item.id}-${item.size ?? 'os'}`} className="bag-item">
+                <div className="bag-item-thumb">
+                  <BagImage src={item.image} alt={item.name} />
+                </div>
+                <div className="bag-item-info">
+                  <p className="bag-item-name">{item.name}</p>
+                  {item.size && <p className="bag-item-meta">Size: {item.size}</p>}
+                  <p className="bag-item-price">K {item.price.toLocaleString()}</p>
+                  <div className="bag-item-controls">
+                    <button type="button" className="btn btn-primary" onClick={() => moveToBag(item.id, item.size)}>
+                      Move to bag
+                    </button>
+                    <button type="button" className="bag-remove" onClick={() => removeSaved(item.id, item.size)} aria-label={`Remove ${item.name} from saved`}>
+                      <Trash2 size={14} />
+                      <span>Remove</span>
+                    </button>
+                  </div>
+                </div>
+                <p className="bag-item-total">K {(item.price * item.quantity).toLocaleString()}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     );
   }
@@ -144,6 +197,15 @@ export default function CartClient({ slugById }: CartClientProps) {
                         <Trash2 size={14} />
                         <span>Remove</span>
                       </button>
+
+                      <button
+                        type="button"
+                        className="bag-remove"
+                        onClick={() => saveForLater(item.id, item.size)}
+                        aria-label={`Save ${item.name} for later`}
+                      >
+                        <span>Save for later</span>
+                      </button>
                     </div>
                   </div>
 
@@ -195,6 +257,41 @@ export default function CartClient({ slugById }: CartClientProps) {
           </aside>
         </div>
       </div>
+
+      {savedForLater.length > 0 && (
+        <section aria-label="Saved for later" style={{ marginTop: '2rem' }}>
+          <div className="bag-header">
+            <div>
+              <h2 className="bag-title">Saved for later</h2>
+              <p className="bag-count">{savedForLater.length} saved</p>
+            </div>
+          </div>
+          <ul className="bag-list">
+            {savedForLater.map((item) => (
+              <li key={`saved-${item.id}-${item.size ?? 'os'}`} className="bag-item">
+                <div className="bag-item-thumb">
+                  <BagImage src={item.image} alt={item.name} />
+                </div>
+                <div className="bag-item-info">
+                  <p className="bag-item-name">{item.name}</p>
+                  {item.size && <p className="bag-item-meta">Size: {item.size}</p>}
+                  <p className="bag-item-price">K {item.price.toLocaleString()}</p>
+                  <div className="bag-item-controls">
+                    <button type="button" className="btn btn-primary" onClick={() => moveToBag(item.id, item.size)}>
+                      Move to bag
+                    </button>
+                    <button type="button" className="bag-remove" onClick={() => removeSaved(item.id, item.size)} aria-label={`Remove ${item.name} from saved`}>
+                      <Trash2 size={14} />
+                      <span>Remove</span>
+                    </button>
+                  </div>
+                </div>
+                <p className="bag-item-total">K {(item.price * item.quantity).toLocaleString()}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

@@ -18,6 +18,8 @@ import {
 import { saveOrder } from '@/lib/orders';
 import { trackEvent } from '@/lib/analytics';
 import { getProfile, getDefaultStore, saveProfile, saveDefaultStore } from '@/lib/preferences';
+import { getStorePromo } from '@/lib/store-promos';
+import { getReadyTimeEstimate } from '@/lib/ready-time';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import SegmentedControl from '@/components/ui/SegmentedControl';
@@ -75,9 +77,12 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
   const [sending, setSending] = useState(false);
 
   const [sent, setSent] = useState<SentSummary | null>(null);
+  const [sentEta, setSentEta] = useState('');
 
   const deliveryFee = deliveryMethod === 'delivery' ? DELIVERY_FEE : 0;
   const total = totalPrice + deliveryFee;
+  const storePromo = selectedStore ? getStorePromo(selectedStore) : undefined;
+  const eta = getReadyTimeEstimate({ method: deliveryMethod, itemCount: totalItems });
 
   if (sent) {
     return (
@@ -89,6 +94,11 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
             Your order of K {sent.total.toLocaleString()} is on its way to us on WhatsApp. We&apos;ll confirm
             {sent.method === 'pickup' ? ` pickup at ${sent.store}` : ' your delivery'} shortly.
           </p>
+          {sentEta && (
+            <p className="co-success-text">
+              <strong>{sentEta}</strong>
+            </p>
+          )}
           <p className="co-success-text">
             Order code: <strong>{sent.code}</strong> — keep it to track your order.
           </p>
@@ -152,6 +162,8 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
       deliveryMethod,
       pickupStore: deliveryMethod === 'pickup' ? selectedStore?.name : undefined,
       deliveryAddress: deliveryMethod === 'delivery' ? deliveryAddress.trim() : undefined,
+      storePromo: deliveryMethod === 'pickup' ? storePromo?.label : undefined,
+      readyTime: eta.label,
     });
 
     setSending(true);
@@ -186,6 +198,7 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
       saveProfile({ name: customerName.trim(), phone: customerPhone.trim() });
       if (selectedStore?.name) saveDefaultStore(selectedStore.name);
 
+      setSentEta(eta.label);
       setSent({ total, method: deliveryMethod, store: selectedStore?.name || '', code: saved.code });
       clearCart();
     } catch (err: any) {
@@ -222,12 +235,18 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
               <div className="co-stores" role="radiogroup" aria-label="Pickup store">
                 {initialStores.map((store) => {
                   const active = selectedStoreId === store.id;
+                  const promo = getStorePromo(store);
                   return (
                     <button key={store.id} type="button" role="radio" aria-checked={active} onClick={() => setSelectedStoreId(store.id)} className={`co-store ${active ? 'is-active' : ''}`}>
                       <span className="co-store-radio" aria-hidden="true" />
                       <span className="co-store-info">
                         <span className="co-store-name"><Store size={15} aria-hidden="true" /> {store.name}</span>
                         <span className="co-store-meta">{store.address} · {store.hours}</span>
+                        {promo && (
+                          <span className="co-store-meta" style={{ color: '#b45309', fontWeight: 600 }}>
+                            ★ {promo.label}
+                          </span>
+                        )}
                       </span>
                     </button>
                   );
@@ -238,6 +257,13 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
                 <Input label="Delivery Address" placeholder="Plot, street, area, town" value={deliveryAddress} onChange={(e) => { setDeliveryAddress(e.target.value); setAddressError(''); }} error={addressError} hint="Lusaka delivery is K50 · countrywide on request" required />
               </div>
             )}
+            <div className="co-fields" style={{ marginTop: '12px' }}>
+              <p className="bag-summary-note" style={{ textAlign: 'left' }}>
+                <strong>{eta.label}</strong>
+                <br />
+                {eta.detail}
+              </p>
+            </div>
           </section>
         </div>
 
@@ -259,6 +285,10 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
               <span className="co-row-icon">{deliveryMethod === 'delivery' ? <Truck size={14} aria-hidden="true" /> : <MapPin size={14} aria-hidden="true" />} {deliveryMethod === 'delivery' ? 'Delivery' : 'Pickup'}</span>
               <span>{deliveryFee === 0 ? 'Free' : `K ${deliveryFee}`}</span>
             </div>
+            <div className="bag-summary-row"><span>ETA</span><span style={{ textAlign: 'right' }}>{eta.label}</span></div>
+            {deliveryMethod === 'pickup' && storePromo && (
+              <div className="bag-summary-row"><span>Promo</span><span style={{ textAlign: 'right' }}>{storePromo.label}</span></div>
+            )}
             <div className="bag-summary-total"><span>Total</span><span>K {total.toLocaleString()}</span></div>
 
             <Button variant="primary" size="lg" fullWidth onClick={handleSendOrder} loading={sending} icon={<MessageCircle size={17} />}>

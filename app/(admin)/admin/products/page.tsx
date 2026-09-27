@@ -9,10 +9,11 @@ import {
   ChevronRight,
   Edit,
   Trash2,
+  Check,
+  X,
+  PackageSearch,
 } from 'lucide-react';
 import Link from 'next/link';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
 
 const CATEGORIES = ['Men', 'Women', 'Footwear', 'Headwear', 'Denim', 'Promos'];
 const ITEMS_PER_PAGE = 10;
@@ -124,57 +125,74 @@ export default function AdminProducts() {
   if (loading) {
     return (
       <div className="admin-page">
-        <div className="admin-page-header">
-          <h1>Products</h1>
-          <Button variant="primary" as="a" href="/admin/products/new">
-              <Plus size={16} strokeWidth={2} />
-              <span>Add Product</span>
-            </Button>
+        <div className="m3-page-head">
+          <div>
+            <h1 className="m3-headline-medium">Products</h1>
+          </div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-          <div className="spinner" />
+        <div className="m3-loading" role="status" aria-label="Loading products">
+          <div className="m3-progress"><span /></div>
+          <p className="m3-body-medium m3-on-surface-variant">Loading products…</p>
         </div>
       </div>
     );
   }
 
+  const categories = ['All', ...CATEGORIES];
+
   return (
     <div className="admin-page">
-      <div className="admin-page-header">
-        <h1>Products</h1>
-        <p className="admin-page-subtitle">
-          {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}
-        </p>
-          <Button variant="primary" as="a" href="/admin/products/new">
-              <Plus size={16} strokeWidth={2} />
-              <span>Add Product</span>
-            </Button>
-      </div>
-
-      <div className="admin-products-toolbar">
-        <div className="admin-search-filter">
-          <Input
-            type="search"
-            placeholder="Search products..."
-            value={search}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-            icon={<Search size={16} />}
-            clearable
-            onClear={() => setSearch('')}
-          />
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="admin-filter-select"
-          >
-            <option value="All">All Categories</option>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+      <div className="m3-page-head">
+        <div>
+          <h1 className="m3-headline-medium">Products</h1>
+          <p className="m3-body-medium m3-on-surface-variant">
+            {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} in the catalogue
+          </p>
+        </div>
+        <div className="m3-page-actions">
+          <Link href="/admin/products/new" className="m3-btn m3-btn-filled">
+            <Plus size={16} strokeWidth={2} />
+            <span>Add product</span>
+          </Link>
         </div>
       </div>
 
+      <div className="admin-products-toolbar">
+        <div className="m3-search" role="search">
+          <Search size={20} aria-hidden="true" />
+          <input
+            type="search"
+            placeholder="Search products…"
+            value={search}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+            aria-label="Search products"
+          />
+          {search && (
+            <button type="button" className="m3-icon-button" onClick={() => setSearch('')} aria-label="Clear search">
+              <X size={18} />
+            </button>
+          )}
+        </div>
+        <div className="m3-chip-row" role="group" aria-label="Filter by category">
+          {categories.map((c) => {
+            const selected = categoryFilter === c;
+            return (
+              <button
+                key={c}
+                type="button"
+                className={`m3-filter-chip${selected ? ' is-selected' : ''}`}
+                aria-pressed={selected}
+                onClick={() => setCategoryFilter(c)}
+              >
+                {selected && <Check size={14} aria-hidden="true" />}
+                {c === 'All' ? 'All categories' : c}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="admin-card hide-mobile">
       <div className="admin-table-container">
         <table className="admin-table">
           <thead>
@@ -183,16 +201,22 @@ export default function AdminProducts() {
               <th>Product</th>
               <th>Category</th>
               <th>Price</th>
-              <th>Sale Price</th>
+              <th>Sale price</th>
               <th>New</th>
               <th>Trending</th>
-              <th>Actions</th>
+              <th><span className="m3-body-small">Actions</span></th>
             </tr>
           </thead>
           <tbody>
             {paginatedProducts.length === 0 ? (
               <tr>
-                <td colSpan={8} className="admin-table-empty">No products found</td>
+                <td colSpan={8} className="admin-table-empty">
+                  <div className="m3-empty">
+                    <span className="m3-empty-icon"><PackageSearch size={28} aria-hidden="true" /></span>
+                    <p className="m3-title-medium">No products found</p>
+                    <p className="m3-body-medium m3-on-surface-variant">Try a different search or category.</p>
+                  </div>
+                </td>
               </tr>
             ) : (
               paginatedProducts.map((product) => (
@@ -210,28 +234,32 @@ export default function AdminProducts() {
                       <span className="admin-product-slug">{product.slug}</span>
                     </div>
                   </td>
-                  <td>{product.categoryName}</td>
+                  <td>
+                    <span className="m3-chip-status" style={{ background: 'var(--m3-secondary-container)', color: 'var(--m3-on-secondary-container)' }}>
+                      {product.categoryName}
+                    </span>
+                  </td>
                   <td className="admin-product-price">{formatCurrency(product.priceMinor)}</td>
                   <td className="admin-product-price">
                     {product.salePriceMinor ? formatCurrency(product.salePriceMinor) : '—'}
                   </td>
-                  <td>{product.isNewArrival ? 'Yes' : 'No'}</td>
-                  <td>{product.isTrending ? 'Yes' : 'No'}</td>
+                  <td>{product.isNewArrival ? <span className="m3-chip-status" style={{ background: 'var(--m3-tertiary-container)', color: 'var(--m3-on-tertiary-container)' }}>New</span> : <span className="m3-body-small m3-on-surface-variant">—</span>}</td>
+                  <td>{product.isTrending ? <span className="m3-chip-status" style={{ background: 'var(--m3-primary-container)', color: 'var(--m3-on-primary-container)' }}>Hot</span> : <span className="m3-body-small m3-on-surface-variant">—</span>}</td>
                   <td>
                     <div className="admin-actions">
                       <Link
                         href={`/admin/products/${product.id}/edit`}
                         className="admin-action-btn"
-                        aria-label="Edit product"
+                        aria-label={`Edit ${product.name}`}
                       >
-                        <Edit size={16} strokeWidth={2} />
+                        <Edit size={18} strokeWidth={2} />
                       </Link>
                       <button
                         onClick={() => setDeleteConfirm(product.id)}
                         className="admin-action-btn danger"
-                        aria-label="Delete product"
+                        aria-label={`Delete ${product.name}`}
                       >
-                        <Trash2 size={16} strokeWidth={2} />
+                        <Trash2 size={18} strokeWidth={2} />
                       </button>
                     </div>
                   </td>
@@ -241,6 +269,7 @@ export default function AdminProducts() {
           </tbody>
         </table>
       </div>
+      </div>
 
       {filteredProducts.length > ITEMS_PER_PAGE && (
         <div className="admin-pagination">
@@ -248,8 +277,9 @@ export default function AdminProducts() {
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
             className="admin-pagination-btn"
+            aria-label="Previous page"
           >
-            <ChevronLeft size={18} strokeWidth={2} />
+            <ChevronLeft size={20} strokeWidth={2} />
           </button>
           <span className="admin-pagination-info">
             Page {currentPage} of {totalPages}
@@ -258,22 +288,76 @@ export default function AdminProducts() {
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
             className="admin-pagination-btn"
+            aria-label="Next page"
           >
-            <ChevronRight size={18} strokeWidth={2} />
+            <ChevronRight size={20} strokeWidth={2} />
           </button>
         </div>
       )}
 
+      <div className="m3-cards-list show-mobile">
+        {paginatedProducts.length === 0 ? (
+          <div className="admin-card">
+            <div className="m3-empty">
+              <span className="m3-empty-icon"><PackageSearch size={28} aria-hidden="true" /></span>
+              <p className="m3-title-medium">No products found</p>
+              <p className="m3-body-medium m3-on-surface-variant">Try a different search or category.</p>
+            </div>
+          </div>
+        ) : (
+          paginatedProducts.map((product) => (
+            <div key={product.id} className="m3-row-card">
+              <img
+                src={product.images[0] || '/products/cozy.jpeg'}
+                alt=""
+                className="m3-row-thumb"
+              />
+              <div className="m3-row-main">
+                <span className="m3-row-title">{product.name}</span>
+                <span className="m3-row-sub">{product.categoryName} · {formatCurrency(product.salePriceMinor ?? product.priceMinor)}</span>
+                <span className="m3-row-chips">
+                  {product.salePriceMinor && (
+                    <span className="m3-chip-status" style={{ background: 'var(--m3-error-container)', color: 'var(--m3-on-error-container)' }}>Sale</span>
+                  )}
+                  {product.isNewArrival && (
+                    <span className="m3-chip-status" style={{ background: 'var(--m3-tertiary-container)', color: 'var(--m3-on-tertiary-container)' }}>New</span>
+                  )}
+                  {product.isTrending && (
+                    <span className="m3-chip-status" style={{ background: 'var(--m3-primary-container)', color: 'var(--m3-on-primary-container)' }}>Hot</span>
+                  )}
+                </span>
+              </div>
+              <div className="m3-row-actions">
+                <Link
+                  href={`/admin/products/${product.id}/edit`}
+                  className="admin-action-btn"
+                  aria-label={`Edit ${product.name}`}
+                >
+                  <Edit size={18} strokeWidth={2} />
+                </Link>
+                <button
+                  onClick={() => setDeleteConfirm(product.id)}
+                  className="admin-action-btn danger"
+                  aria-label={`Delete ${product.name}`}
+                >
+                  <Trash2 size={18} strokeWidth={2} />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
       {deleteConfirm && (
         <div className="admin-modal-overlay" onClick={() => setDeleteConfirm(null)}>
-          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Delete Product?</h3>
-            <p>This action cannot be undone.</p>
+          <div className="admin-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-product-title" onClick={(e) => e.stopPropagation()}>
+            <h3 id="delete-product-title">Delete product?</h3>
+            <p>This action cannot be undone. The product will disappear from the store immediately.</p>
             <div className="admin-modal-actions">
-              <button onClick={() => setDeleteConfirm(null)} className="btn btn-secondary">
+              <button onClick={() => setDeleteConfirm(null)} className="m3-btn m3-btn-text">
                 Cancel
               </button>
-              <button onClick={() => handleDelete(deleteConfirm)} className="btn btn-primary danger">
+              <button onClick={() => handleDelete(deleteConfirm)} className="m3-btn m3-btn-text is-danger">
                 Delete
               </button>
             </div>

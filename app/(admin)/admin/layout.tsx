@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import { Roboto } from 'next/font/google';
 import { supabaseBrowser as supabase } from '@/lib/supabase/client';
 import {
   LayoutDashboard,
@@ -30,6 +31,14 @@ const allNavItems = [
   { href: '/admin/homepage', label: 'Homepage', icon: LayoutTemplate, ownerOnly: true },
   { href: '/admin/settings', label: 'Settings', icon: Settings, ownerOnly: false },
 ];
+
+/* Material 3 typeface for the admin console (Roboto). */
+const roboto = Roboto({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  display: 'swap',
+  variable: '--font-roboto',
+});
 
 export default function AdminLayout({
   children,
@@ -111,7 +120,7 @@ export default function AdminLayout({
   const activeLabel = navItems.find(n => n.href === pathname)?.label || 'Admin';
 
   return (
-    <div className="admin-layout">
+    <div className={`admin-layout m3 ${roboto.variable}`}>
       {sidebarOpen && (
         <div className="admin-sidebar-overlay" onClick={() => setSidebarOpen(false)} />
       )}
@@ -126,6 +135,7 @@ export default function AdminLayout({
                 <path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"></path>
               </svg>
             </span>
+            <span className="m3-drawer-title">BEILO<small>Admin console</small></span>
           </Link>
           <button className="admin-sidebar-close" onClick={() => setSidebarOpen(false)}>
             <X size={20} />
@@ -196,26 +206,34 @@ export default function AdminLayout({
 
         <nav className="admin-bottomnav">
           <Link href="/admin/dashboard" className={`admin-bottomnav-item ${pathname === '/admin/dashboard' ? 'active' : ''}`}>
-            <LayoutDashboard size={21} />
+            <span className="m3-nav-indicator">
+              <LayoutDashboard size={21} />
+            </span>
             <span>Overview</span>
           </Link>
           <Link href="/admin/orders" className={`admin-bottomnav-item ${pathname === '/admin/orders' ? 'active' : ''}`}>
-            <span className="admin-bottomnav-iconwrap">
+            <span className="m3-nav-indicator">
               <ShoppingBag size={21} />
               <span className="admin-bottomnav-badge">24</span>
             </span>
             <span>Orders</span>
           </Link>
           <Link href="/admin/products" className={`admin-bottomnav-item ${pathname === '/admin/products' ? 'active' : ''}`}>
-            <Package size={21} />
+            <span className="m3-nav-indicator">
+              <Package size={21} />
+            </span>
             <span>Products</span>
           </Link>
           <Link href="/admin/staff" className={`admin-bottomnav-item ${pathname === '/admin/staff' ? 'active' : ''}`}>
-            <Users size={21} />
+            <span className="m3-nav-indicator">
+              <Users size={21} />
+            </span>
             <span>Customers</span>
           </Link>
           <button className="admin-bottomnav-item" onClick={() => setSidebarOpen(true)}>
-            <Menu size={21} />
+            <span className="m3-nav-indicator">
+              <Menu size={21} />
+            </span>
             <span>More</span>
           </button>
         </nav>

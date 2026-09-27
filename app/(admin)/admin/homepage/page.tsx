@@ -12,9 +12,8 @@ import {
   Image as ImageIcon,
   Link2,
   X,
+  Check,
 } from 'lucide-react';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
 import ImageUpload from '@/components/ui/ImageUpload';
 
 type BlockType = 'hero' | 'quick_link' | 'announcement';
@@ -251,83 +250,105 @@ export default function AdminHomepage() {
   if (loading) {
     return (
       <div className="admin-page">
-        <div className="admin-page-header"><h1>Homepage</h1></div>
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-          <div className="spinner" />
+        <div className="m3-page-head">
+          <div>
+            <h1 className="m3-headline-medium">Homepage</h1>
+          </div>
+        </div>
+        <div className="m3-loading" role="status" aria-label="Loading homepage blocks">
+          <div className="m3-progress"><span /></div>
+          <p className="m3-body-medium m3-on-surface-variant">Loading homepage blocks…</p>
         </div>
       </div>
     );
   }
 
+  const typeIcon = (type: BlockType) =>
+    type === 'hero' ? ImageIcon : type === 'quick_link' ? Link2 : Megaphone;
+  const typeTint = (type: BlockType) =>
+    type === 'hero'
+      ? { background: 'var(--m3-secondary-container)', color: 'var(--m3-on-secondary-container)' }
+      : type === 'quick_link'
+        ? { background: 'var(--m3-tertiary-container)', color: 'var(--m3-on-tertiary-container)' }
+        : { background: 'var(--m3-primary-container)', color: 'var(--m3-on-primary-container)' };
+
   return (
     <div className="admin-page">
-      <div className="admin-page-header">
+      <div className="m3-page-head">
         <div>
-          <h1>Homepage</h1>
-          <p className="admin-page-subtitle">
+          <h1 className="m3-headline-medium">Homepage</h1>
+          <p className="m3-body-medium m3-on-surface-variant">
             {blocks.length} block{blocks.length !== 1 ? 's' : ''} · {blocks.filter((b) => b.active).length} live on the store
           </p>
         </div>
-        <Button variant="primary" onClick={openNew}>
-          <Plus size={16} strokeWidth={2} />
-          <span>Add block</span>
-        </Button>
+        <div className="m3-page-actions">
+          <button type="button" className="m3-btn m3-btn-filled" onClick={openNew}>
+            <Plus size={16} strokeWidth={2} />
+            <span>Add block</span>
+          </button>
+        </div>
       </div>
 
-      {error && <div className="admin-login-error">{error}</div>}
+      {error && (
+        <div className="m3-error-block" role="alert">
+          {error}
+        </div>
+      )}
 
       {blocks.length === 0 && !showEditor ? (
-        <div className="admin-section" style={{ padding: '48px 24px', textAlign: 'center' }}>
-          <Megaphone size={32} strokeWidth={1.5} style={{ color: 'var(--moonlit-silver)', marginBottom: '12px' }} />
-          <h2 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>No homepage blocks yet</h2>
-          <p style={{ fontSize: '13px', color: 'var(--ironclad-grey)', marginBottom: '20px' }}>
-            The store shows default content until you add blocks. Create a hero banner,
-            quick-link row, or top-bar announcement.
-          </p>
-          <Button variant="primary" onClick={openNew}>
-            <Plus size={16} strokeWidth={2} />
-            <span>Add your first block</span>
-          </Button>
+        <div className="admin-card">
+          <div className="m3-empty">
+            <span className="m3-empty-icon"><Megaphone size={28} strokeWidth={1.5} aria-hidden="true" /></span>
+            <p className="m3-title-medium">No homepage blocks yet</p>
+            <p className="m3-body-medium m3-on-surface-variant" style={{ maxWidth: '420px' }}>
+              The store shows default content until you add blocks. Create a hero banner,
+              quick-link row, or top-bar announcement.
+            </p>
+            <button type="button" className="m3-btn m3-btn-filled" onClick={openNew} style={{ marginTop: '8px' }}>
+              <Plus size={16} strokeWidth={2} />
+              <span>Add your first block</span>
+            </button>
+          </div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {[...blocks].sort((a, b) => a.sort_order - b.sort_order).map((block, idx, arr) => (
-            <div key={block.id} className="admin-section" style={{ padding: '16px 20px' }}>
+        <div className="m3-block-list">
+          {[...blocks].sort((a, b) => a.sort_order - b.sort_order).map((block, idx, arr) => {
+            const Leading = typeIcon(block.type);
+            return (
+            <div key={block.id} className="admin-card" style={{ padding: '16px 12px 16px 16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                <span className="admin-stock-badge" style={{
-                  background: block.type === 'hero' ? '#dbeafe' : block.type === 'quick_link' ? '#ede9fe' : '#fef3c7',
-                  color: block.type === 'hero' ? '#1d4ed8' : block.type === 'quick_link' ? '#6d28d9' : '#92400e',
-                }}>
-                  {TYPE_META[block.type]?.label || block.type}
+                <span className="m3-block-leading" style={typeTint(block.type)}>
+                  <Leading size={22} aria-hidden="true" />
                 </span>
                 <div style={{ flex: 1, minWidth: '160px' }}>
-                  <div style={{ fontWeight: 600, fontSize: '14px' }}>{block.title}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--ironclad-grey)' }}>
+                  <div className="m3-title-medium">{block.title}</div>
+                  <div className="m3-body-small m3-on-surface-variant">
+                    {TYPE_META[block.type]?.label}
                     {block.type === 'quick_link'
-                      ? `${block.content?.items?.length || 0} links`
-                      : block.content?.href || TYPE_META[block.type]?.hint}
+                      ? ` · ${block.content?.items?.length || 0} links`
+                      : block.content?.href
+                        ? ` · ${block.content.href}`
+                        : ''}
                     {!block.active && ' · Hidden'}
                   </div>
                 </div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={block.active}
-                    onChange={() => toggleActive(block)}
-                    style={{ width: '16px', height: '16px', accentColor: 'var(--charcoal-noir)' }}
-                  />
-                  Live
-                </label>
-                <div style={{ display: 'flex', gap: '4px' }}>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={block.active}
+                  aria-label={`Show “${block.title}” on store`}
+                  className="m3-switch"
+                  onClick={() => toggleActive(block)}
+                />
+                <div className="m3-block-actions">
                   <button
                     type="button"
                     onClick={() => move(block, -1)}
                     disabled={idx === 0}
                     className="admin-action-btn"
                     aria-label="Move up"
-                    style={{ opacity: idx === 0 ? 0.3 : 1 }}
                   >
-                    <ChevronUp size={16} />
+                    <ChevronUp size={18} />
                   </button>
                   <button
                     type="button"
@@ -335,63 +356,78 @@ export default function AdminHomepage() {
                     disabled={idx === arr.length - 1}
                     className="admin-action-btn"
                     aria-label="Move down"
-                    style={{ opacity: idx === arr.length - 1 ? 0.3 : 1 }}
                   >
-                    <ChevronDown size={16} />
+                    <ChevronDown size={18} />
                   </button>
-                  <button type="button" onClick={() => openEdit(block)} className="admin-action-btn" aria-label="Edit block">
-                    <Pencil size={16} />
+                  <button type="button" onClick={() => openEdit(block)} className="admin-action-btn" aria-label={`Edit ${block.title}`}>
+                    <Pencil size={18} />
                   </button>
-                  <button type="button" onClick={() => setDeleteId(block.id)} className="admin-action-btn danger" aria-label="Delete block">
-                    <Trash2 size={16} />
+                  <button type="button" onClick={() => setDeleteId(block.id)} className="admin-action-btn danger" aria-label={`Delete ${block.title}`}>
+                    <Trash2 size={18} />
                   </button>
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {showEditor && (
-        <div className="admin-section" style={{ marginTop: '24px' }}>
-          <div className="admin-section-header">
-            <h2>{editingId ? 'Edit block' : 'New block'}</h2>
+        <div className="admin-card" style={{ marginTop: '8px', padding: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '16px' }}>
+            <h2 className="m3-title-large">{editingId ? 'Edit block' : 'New block'}</h2>
             <button type="button" onClick={() => setShowEditor(false)} className="admin-action-btn" aria-label="Close editor">
-              <X size={16} />
+              <X size={18} />
             </button>
           </div>
-          <form onSubmit={handleSave} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '640px' }}>
+          <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '640px' }}>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Block type</label>
-              <select
-                value={form.type}
-                onChange={(e) => updateForm({ type: e.target.value as BlockType })}
-                className="admin-filter-select"
-                style={{ width: '100%' }}
-                disabled={!!editingId}
-              >
-                {(Object.keys(TYPE_META) as BlockType[]).map((t) => (
-                  <option key={t} value={t}>{TYPE_META[t].label} — {TYPE_META[t].hint}</option>
-                ))}
-              </select>
+              <span className="m3-field-label" id="block-type-label">Block type</span>
+              <div className="m3-chip-row" role="group" aria-labelledby="block-type-label" style={{ marginTop: '8px' }}>
+                {(Object.keys(TYPE_META) as BlockType[]).map((t) => {
+                  const selected = form.type === t;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      className={`m3-filter-chip${selected ? ' is-selected' : ''}`}
+                      aria-pressed={selected}
+                      disabled={!!editingId}
+                      title={TYPE_META[t].hint}
+                      onClick={() => updateForm({ type: t })}
+                    >
+                      {selected && <Check size={14} aria-hidden="true" />}
+                      {TYPE_META[t].label}
+                    </button>
+                  );
+                })}
+              </div>
+              <span className="m3-field-hint">{TYPE_META[form.type].hint}</span>
             </div>
 
-            <Input
-              label={form.type === 'announcement' ? 'Message' : form.type === 'hero' ? 'Headline' : 'Block title'}
-              required
-              placeholder={form.type === 'announcement' ? 'e.g. Free delivery this weekend' : form.type === 'hero' ? 'e.g. New season just dropped' : 'e.g. Shop by category'}
-              value={form.title}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ title: e.target.value })}
-            />
+            <div className="m3-field">
+              <label htmlFor="block-title">{form.type === 'announcement' ? 'Message' : form.type === 'hero' ? 'Headline' : 'Block title'}</label>
+              <input
+                id="block-title"
+                required
+                placeholder={form.type === 'announcement' ? 'e.g. Free delivery this weekend' : form.type === 'hero' ? 'e.g. New season just dropped' : 'e.g. Shop by category'}
+                value={form.title}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ title: e.target.value })}
+              />
+            </div>
 
             {form.type === 'hero' && (
               <>
-                <Input
-                  label="Subheading"
-                  placeholder="e.g. Fresh fits for every day in Zambia"
-                  value={form.subtitle}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ subtitle: e.target.value })}
-                />
+                <div className="m3-field">
+                  <label htmlFor="block-subtitle">Subheading</label>
+                  <input
+                    id="block-subtitle"
+                    placeholder="e.g. Fresh fits for every day in Zambia"
+                    value={form.subtitle}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ subtitle: e.target.value })}
+                  />
+                </div>
                 <ImageUpload
                   label="Background image"
                   value={form.image}
@@ -399,52 +435,66 @@ export default function AdminHomepage() {
                   pathPrefix="homepage"
                   hint="Upload from your machine — shows on the store hero"
                 />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <Input
-                    label="Button text"
-                    placeholder="Shop now"
-                    value={form.cta_text}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ cta_text: e.target.value })}
-                  />
-                  <Input
-                    label="Button link"
-                    placeholder="/shop"
-                    value={form.href}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ href: e.target.value })}
-                  />
+                <div className="m3-field-row">
+                  <div className="m3-field">
+                    <label htmlFor="block-cta">Button text</label>
+                    <input
+                      id="block-cta"
+                      placeholder="Shop now"
+                      value={form.cta_text}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ cta_text: e.target.value })}
+                    />
+                  </div>
+                  <div className="m3-field">
+                    <label htmlFor="block-href">Button link</label>
+                    <input
+                      id="block-href"
+                      placeholder="/shop"
+                      value={form.href}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ href: e.target.value })}
+                    />
+                  </div>
                 </div>
-                <Input
-                  label="Offer line (optional)"
-                  placeholder="e.g. Up to 30% off this week"
-                  value={form.offer}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ offer: e.target.value })}
-                  hint="Small promo line under the button on the store"
-                />
+                <div className="m3-field">
+                  <label htmlFor="block-offer">Offer line (optional)</label>
+                  <input
+                    id="block-offer"
+                    placeholder="e.g. Up to 30% off this week"
+                    value={form.offer}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ offer: e.target.value })}
+                  />
+                  <span className="m3-field-hint">Small promo line under the button on the store.</span>
+                </div>
               </>
             )}
 
             {form.type === 'announcement' && (
-              <Input
-                label="Link (where the message goes)"
-                placeholder="/shop"
-                value={form.href}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ href: e.target.value })}
-              />
+              <div className="m3-field">
+                <label htmlFor="block-link">Link (where the message goes)</label>
+                <input
+                  id="block-link"
+                  placeholder="/shop"
+                  value={form.href}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ href: e.target.value })}
+                />
+              </div>
             )}
 
             {form.type === 'quick_link' && (
               <div>
-                <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Links</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span className="m3-field-label">Links</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
                   {form.items.map((item, i) => (
                     <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <div style={{ flex: 1 }}>
-                        <Input
-                          placeholder="Label (e.g. Hoodies)"
-                          value={item.label}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(i, { label: e.target.value })}
-                          aria-label={`Link ${i + 1} label`}
-                        />
+                        <div className="m3-field">
+                          <input
+                            placeholder="Label (e.g. Hoodies)"
+                            value={item.label}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateItem(i, { label: e.target.value })}
+                            aria-label={`Link ${i + 1} label`}
+                          />
+                        </div>
                       </div>
                       <ImageUpload
                         compact
@@ -454,65 +504,68 @@ export default function AdminHomepage() {
                         pathPrefix="homepage"
                       />
                       <button type="button" onClick={() => removeItem(i)} className="admin-action-btn danger" aria-label="Remove link">
-                        <X size={14} />
+                        <X size={16} />
                       </button>
                     </div>
                   ))}
                   <button
                     type="button"
                     onClick={addItem}
-                    style={{ alignSelf: 'flex-start', background: 'none', border: '1px dashed var(--cloud-veil)', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                    className="m3-add-link"
                   >
-                    + Add link
+                    <Plus size={14} aria-hidden="true" /> Add link
                   </button>
                 </div>
-                <Input
-                  label="Block link (where 'Shop now' goes)"
-                  placeholder="/shop"
-                  value={form.href}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ href: e.target.value })}
-                />
+                <div className="m3-field" style={{ marginTop: '12px' }}>
+                  <label htmlFor="block-quick-href">Block link (where &lsquo;Shop now&rsquo; goes)</label>
+                  <input
+                    id="block-quick-href"
+                    placeholder="/shop"
+                    value={form.href}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm({ href: e.target.value })}
+                  />
+                </div>
               </div>
             )}
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={form.active}
-                onChange={(e) => updateForm({ active: e.target.checked })}
-                style={{ width: '16px', height: '16px', accentColor: 'var(--charcoal-noir)' }}
+            <span className="m3-switch-label">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.active}
+                aria-label="Show on store immediately"
+                className="m3-switch"
+                onClick={() => updateForm({ active: !form.active })}
               />
               Show on store immediately
-            </label>
+            </span>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <Button type="submit" variant="primary" loading={saving}>
-                <span>{editingId ? 'Save changes' : 'Create block'}</span>
-              </Button>
-              <Button type="button" variant="secondary" onClick={() => setShowEditor(false)}>Cancel</Button>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button type="button" className="m3-btn m3-btn-text" onClick={() => setShowEditor(false)}>Cancel</button>
+              <button type="submit" className="m3-btn m3-btn-filled" disabled={saving}>
+                {saving ? 'Saving…' : editingId ? 'Save changes' : 'Create block'}
+              </button>
             </div>
           </form>
         </div>
       )}
 
       {deleteId && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '16px' }}>
-          <div className="admin-section" style={{ padding: '24px', maxWidth: '400px', width: '100%' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>Delete this block?</h2>
-            <p style={{ fontSize: '13px', color: 'var(--ironclad-grey)', marginBottom: '20px' }}>
-              It will disappear from the store immediately. This can&apos;t be undone.
-            </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <Button type="button" variant="secondary" onClick={() => setDeleteId(null)}>Cancel</Button>
-              <Button type="button" variant="primary" onClick={handleDelete}>Delete</Button>
+        <div className="admin-modal-overlay" onClick={() => setDeleteId(null)}>
+          <div className="admin-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-block-title" onClick={(e) => e.stopPropagation()}>
+            <h3 id="delete-block-title">Delete this block?</h3>
+            <p>It will disappear from the store immediately. This can&apos;t be undone.</p>
+            <div className="admin-modal-actions">
+              <button type="button" className="m3-btn m3-btn-text" onClick={() => setDeleteId(null)}>Cancel</button>
+              <button type="button" className="m3-btn m3-btn-text is-danger" onClick={handleDelete}>Delete</button>
             </div>
           </div>
         </div>
       )}
 
-      <p style={{ fontSize: '12px', color: 'var(--ironclad-grey)', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <Link2 size={13} /> Tip: use the arrows to reorder — the store shows blocks top to bottom in this order.
-        <ImageIcon size={13} style={{ marginLeft: '8px' }} /> Images can be any store image path or full URL.
+      <p className="m3-tip">
+        <Link2 size={13} aria-hidden="true" /> Tip: use the arrows to reorder — the store shows blocks top to bottom in this order.
+        <ImageIcon size={13} aria-hidden="true" style={{ marginLeft: '8px' }} /> Images can be any store image path or full URL.
       </p>
     </div>
   );

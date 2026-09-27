@@ -29,6 +29,7 @@ interface AddItemData {
 
 interface CartContextType {
   items: CartItem[];
+  savedForLater: CartItem[];
   totalItems: number;
   totalPrice: number;
   isHydrated: boolean;
@@ -40,9 +41,13 @@ interface CartContextType {
     size?: string
   ) => void;
   clearCart: () => void;
+  saveForLater: (id: string, size?: string) => void;
+  moveToBag: (id: string, size?: string) => void;
+  removeSaved: (id: string, size?: string) => void;
 }
 
 const CART_KEY = 'cart';
+const SAVE_LATER_KEY = 'beilo-save-later';
 const MAX_QTY = 99;
 
 /**
@@ -110,6 +115,7 @@ export function CartProvider({
   // server HTML, then hydrate from localStorage in an
   // effect to avoid a hydration mismatch.
   const [items, setItems] = useState<CartItem[]>([]);
+  const [savedForLater, setSavedForLater] = useState<CartItem[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
   const hydratedRef = useRef(false);
 
@@ -118,6 +124,7 @@ export function CartProvider({
     hydratedRef.current = true;
     try {
       const savedCart = window.localStorage.getItem(CART_KEY);
+      const savedLaterRaw = window.localStorage.getItem(SAVE_LATER_KEY);
 
       if (savedCart) {
         const stored = sanitizeItems(JSON.parse(savedCart));
@@ -137,6 +144,11 @@ export function CartProvider({
           }
           return merged;
         });
+      }
+
+      if (savedLaterRaw) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSavedForLater(sanitizeItems(JSON.parse(savedLaterRaw)));
       }
     } catch (error) {
       console.error(
@@ -158,13 +170,17 @@ export function CartProvider({
         CART_KEY,
         JSON.stringify(items)
       );
+      window.localStorage.setItem(
+        SAVE_LATER_KEY,
+        JSON.stringify(savedForLater)
+      );
     } catch (error) {
       console.error(
         'Failed to save cart to localStorage:',
         error
       );
     }
-  }, [items, isHydrated]);
+  }, [items, savedForLater, isHydrated]);
 
   const addItem = (
     item: AddItemData,
@@ -247,6 +263,47 @@ export function CartProvider({
     }
   };
 
+  const saveForLater = (id: string, size?: string) => {
+    const target = { id, size };
+    setItems((prevItems) => {
+      const found = prevItems.find((item) => sameLine(item, target));
+      if (found) {
+        setSavedForLater((prevSaved) => {
+          const existing = prevSaved.find((s) => sameLine(s, target));
+          if (existing) return prevSaved;
+          return [...prevSaved, found];
+        });
+      }
+      return prevItems.filter((item) => !sameLine(item, target));
+    });
+  };
+
+  const moveToBag = (id: string, size?: string) => {
+    const target = { id, size };
+    setSavedForLater((prevSaved) => {
+      const found = prevSaved.find((s) => sameLine(s, target));
+      if (found) {
+        setItems((prevItems) => {
+          const existing = prevItems.find((m) => sameLine(m, target));
+          if (existing) {
+            return prevItems.map((m) =>
+              sameLine(m, target)
+                ? { ...m, quantity: Math.min(MAX_QTY, m.quantity + found.quantity) }
+                : m
+            );
+          }
+          return [...prevItems, found];
+        });
+      }
+      return prevSaved.filter((s) => !sameLine(s, target));
+    });
+  };
+
+  const removeSaved = (id: string, size?: string) => {
+    const target = { id, size };
+    setSavedForLater((prev) => prev.filter((s) => !sameLine(s, target)));
+  };
+
   const totalItems = items.reduce(
     (sum, item) => sum + item.quantity,
     0
@@ -262,6 +319,7 @@ export function CartProvider({
     <CartContext.Provider
       value={{
         items,
+        savedForLater,
         totalItems,
         totalPrice,
         isHydrated,
@@ -269,6 +327,9 @@ export function CartProvider({
         removeItem,
         updateQuantity,
         clearCart,
+        saveForLater,
+        moveToBag,
+        removeSaved,
       }}
     >
       {children}

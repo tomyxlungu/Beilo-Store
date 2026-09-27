@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { MapPin, Clock, Phone, Navigation, ChevronRight } from 'lucide-react';
+import { MapPin, Clock, Phone, Navigation, ChevronRight, BadgePercent } from 'lucide-react';
 import { Store } from '@/types/product';
+import { getStorePromo } from '@/lib/store-promos';
 import Button from '@/components/ui/Button';
 import Breadcrumb from '@/components/ui/Breadcrumb';
 
@@ -78,6 +79,14 @@ export default function StoresClient({ initialStores }: StoresClientProps) {
                     <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '4px', color: 'var(--charcoal-noir)' }}>
                       {store.name}
                     </h3>
+                    {(() => {
+                      const promo = getStorePromo(store);
+                      return promo ? (
+                        <p style={{ fontSize: '12px', color: '#b45309', fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <BadgePercent size={13} /> {promo.label}
+                        </p>
+                      ) : null;
+                    })()}
                     <p style={{ fontSize: '13px', color: 'var(--ironclad-grey)', marginBottom: '4px' }}>
                       {store.address}
                     </p>
@@ -113,6 +122,18 @@ export default function StoresClient({ initialStores }: StoresClientProps) {
                   <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>
                     {selectedStoreData.name}
                   </h2>
+
+                  {(() => {
+                    const promo = getStorePromo(selectedStoreData);
+                    return promo ? (
+                      <div style={{ background: '#fef3c7', border: '1px solid #fbbf24', borderRadius: '12px', padding: '12px', marginBottom: '16px', fontSize: '13px' }}>
+                        <p style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <BadgePercent size={15} /> {promo.label}
+                        </p>
+                        {promo.detail && <p style={{ color: 'var(--ironclad-grey)', marginTop: '4px' }}>{promo.detail}</p>}
+                      </div>
+                    ) : null;
+                  })()}
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -15,25 +15,41 @@ import {
   Lock,
   RotateCcw,
   Store,
-  Award,
   ChevronLeft,
   ChevronRight,
-  Zap,
 } from 'lucide-react';
 import { useCart } from '@/lib/cart-context';
 import { useWishlist } from '@/lib/wishlist-context';
+import {
+  fetchRatings,
+  submitReview,
+  EMPTY_SUMMARY,
+  type ProductReview,
+  type RatingSummary,
+} from '@/lib/reviews';
+import { saveDefaultStore, getProfile } from '@/lib/preferences';
 import type { Product } from '@/types/product';
 import ProductCard from '@/components/ui/ProductCard';
 import SizeSelector from '@/components/ui/SizeSelector';
 import StockInfo from '@/components/ui/StockInfo';
-import Accordion from '@/components/ui/Accordion';
 
 interface ProductClientProps {
   product: Product;
   relatedProducts: Product[];
+  completeLookProducts?: Product[];
+  /** Real aggregate fetched server-side from the reviews table. */
+  initialRating?: RatingSummary;
+  /** Real reviews fetched server-side (latest 12). */
+  initialReviews?: ProductReview[];
 }
 
-export default function ProductClient({ product, relatedProducts }: ProductClientProps) {
+export default function ProductClient({
+  product,
+  relatedProducts,
+  completeLookProducts = [],
+  initialRating = EMPTY_SUMMARY,
+  initialReviews = [],
+}: ProductClientProps) {
   const router = useRouter();
   const { addItem } = useCart();
   const { has, toggle, isHydrated } = useWishlist();
@@ -46,6 +62,34 @@ export default function ProductClient({ product, relatedProducts }: ProductClien
   const [sizeError, setSizeError] = useState('');
   const [quantity, setQuantity] = useState(1);
   const relatedRef = useRef<HTMLDivElement>(null);
+  const lookRef = useRef<HTMLDivElement>(null);
+  const [storeQuery, setStoreQuery] = useState('');
+  const [userReviews, setUserReviews] = useState<ProductReview[]>(initialReviews);
+  const [reviewName, setReviewName] = useState('');
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewError, setReviewError] = useState('');
+  const [posting, setPosting] = useState(false);
+  const [posted, setPosted] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [verifiedBuyer, setVerifiedBuyer] = useState(false);
+  // Hydration-safe: starts as the server-provided real summary, then
+  // refreshes from the API with the viewer's phone for the verified flag.
+  const [rating, setRating] = useState<RatingSummary>(initialRating);
+
+  useEffect(() => {
+    let cancelled = false;
+    const phone = getProfile().phone || undefined;
+    fetchRatings(product.id, phone).then((data) => {
+      if (cancelled) return;
+      setRating(data.summary);
+      setUserReviews(data.reviews);
+      setVerifiedBuyer(data.viewerVerified);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [product.id]);
 
   const wishlisted = isHydrated && has(product.id);
 
@@ -62,14 +106,6 @@ export default function ProductClient({ product, relatedProducts }: ProductClien
 
   function categoryFallback(product: Product): string {
     return CATEGORY_FALLBACKS[product.category] ?? FINAL_FALLBACK;
-  }
-
-  function productRating(slug: string): { rating: number; count: number } {
-    let hash = 0;
-    for (let i = 0; i < slug.length; i++) {
-      hash = (hash * 31 + slug.charCodeAt(i)) >>> 0;
-    }
-    return { rating: 4.5 + (hash % 5) / 10, count: 48 + (hash % 1400) };
   }
 
   function Stars({ rating, size = 15 }: { rating: number; size?: number }) {
@@ -93,44 +129,14 @@ export default function ProductClient({ product, relatedProducts }: ProductClien
     );
   }
 
-  const SAMPLE_REVIEWS = [
-    { initials: 'CM', name: 'Chanda M.', title: 'Great fit, quality fabric!' },
-    { initials: 'MK', name: 'Mwila K.', title: 'Arrived fast, love it!' },
-    { initials: 'TN', name: 'Tendai N.', title: 'True to size, will buy again!' },
-  ];
-
-  function ProductFaq({ name }: { name: string }) {
-    return (
-      <Accordion
-        items={[
-          {
-            question: 'How fast is delivery?',
-            answer: 'We deliver within Lusaka in 1–2 working days and countrywide in 2–5 working days. Delivery fees are confirmed at checkout.',
-          },
-          {
-            question: 'What is your return policy?',
-            answer: 'Changed your mind? Return unworn items with tags within 7 days for an exchange or refund. Need help? Chat to us on WhatsApp.',
-          },
-          {
-            question: `How does ${name} fit?`,
-            answer: 'Our fits run true to size. If you are between sizes, we recommend sizing up for a relaxed fit. Check the size guide on each size for measurements.',
-          },
-          {
-            question: 'Can I pick up in store?',
-            answer: 'Yes. Choose pickup at checkout and collect from any of our 5 stores — Lusaka, Ndola or Kitwe. We will message you when your order is ready.',
-          },
-          {
-            question: 'How do I pay?',
-            answer: 'We accept mobile money and pay on delivery in selected areas. All payments are confirmed before dispatch.',
-          },
-        ]}
-      />
-    );
-  }
-
   const gallery = product.images.length > 0 ? product.images : [CATEGORY_FALLBACKS[product.category] ?? '/products/cozy.jpeg'];
   const mainSrc = imgSrc ?? gallery[activeImage];
-  const { rating, count } = productRating(product.slug);
+  const { rating: ratingValue, count: ratingCount } = rating;
+  const TRUNCATE_AT = 110;
+  const isLong = product.description.length > TRUNCATE_AT;
+  const visibleDescription = expanded || !isLong
+    ? product.description
+    : `${product.description.slice(0, TRUNCATE_AT).trimEnd()}…`;
 
   const soldOut =
     product.stockByStore.length > 0 &&
@@ -188,8 +194,23 @@ export default function ProductClient({ product, relatedProducts }: ProductClien
     });
   };
 
+  const handleAddAllLook = () => {
+    for (const item of completeLookProducts.slice(0, 4)) {
+      addItem({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        image: item.images[0],
+      });
+    }
+  };
+
   const scrollRelated = (direction: 1 | -1) => {
     relatedRef.current?.scrollBy({ left: direction * 480, behavior: 'smooth' });
+  };
+
+  const scrollLook = (direction: 1 | -1) => {
+    lookRef.current?.scrollBy({ left: direction * 480, behavior: 'smooth' });
   };
 
   const tag = soldOut
@@ -202,29 +223,11 @@ export default function ProductClient({ product, relatedProducts }: ProductClien
     ? { label: 'Trending', modifier: 'product-tag--trend' }
     : null;
 
-  const trustItems = [
-    { Icon: Lock, label: 'Secure Checkout' },
-    { Icon: Truck, label: 'Fast Shipping' },
-    { Icon: RotateCcw, label: '7-Day Returns' },
-    { Icon: Store, label: '5 Stores Countrywide' },
-  ];
-
-  const whyItems = [
-    { Icon: Award, title: 'Premium Quality', text: 'Hand-picked fabrics and finishes that survive everyday wear and washing.' },
-    { Icon: Zap, title: 'Fast Delivery', text: 'Same-week delivery in Lusaka and countrywide shipping to your door.' },
-    { Icon: RotateCcw, title: 'Easy Returns', text: '7-day exchanges and refunds. No stories, no stress — just BEILO.' },
-  ];
-
   return (
     <div className="pdp">
-      <Link href="/shop" className="pdp-back">
-        <ArrowLeft size={17} strokeWidth={2} />
-        <span>Back to Shop</span>
-      </Link>
-
       <div className="pdp-top">
         <div className="pdp-gallery">
-          <div className="pdp-main">
+          <div className="pdp-main pdp-hero-card">
             <Image
               key={mainSrc}
               src={mainSrc}
@@ -236,15 +239,13 @@ export default function ProductClient({ product, relatedProducts }: ProductClien
               onError={handleImageError}
             />
 
-            {tag && (
-              <span className={`product-tag ${tag.modifier}`}>
-                {tag.label}
-              </span>
-            )}
+            <Link href="/shop" className="pdp-nav-btn pdp-nav-back" aria-label="Back to shop">
+              <ArrowLeft size={17} strokeWidth={2} />
+            </Link>
 
             <button
               type="button"
-              className="product-wishlist pdp-wishlist"
+              className="pdp-nav-btn pdp-nav-heart"
               aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
               aria-pressed={wishlisted}
               onClick={() => toggle(product.id)}
@@ -256,6 +257,16 @@ export default function ProductClient({ product, relatedProducts }: ProductClien
                 color={wishlisted ? '#ef3030' : 'currentColor'}
               />
             </button>
+
+            {ratingCount > 0 && (
+              <a href="#pdp-reviews" className="pdp-rating-pill" aria-label={`${ratingValue.toFixed(1)} stars, ${ratingCount} ratings. Go to reviews.`}>
+                <span className="pdp-rating-pill-value">{ratingValue.toFixed(1)}</span>
+                <Star size={13} strokeWidth={2} fill="currentColor" aria-hidden="true" />
+                <span className="pdp-rating-pill-sep" aria-hidden="true">|</span>
+                <span>Ratings</span>
+                <ChevronRight size={13} strokeWidth={2.5} aria-hidden="true" />
+              </a>
+            )}
           </div>
 
           {gallery.length > 1 && (
@@ -289,16 +300,25 @@ export default function ProductClient({ product, relatedProducts }: ProductClien
           </p>
           <h1 className="pdp-title">{product.name}</h1>
 
-          <div className="pdp-rating-row">
-            <Stars rating={rating} />
-            <span className="pdp-rating-value">{rating.toFixed(1)}</span>
-            <a href="#pdp-reviews" className="pdp-review-link">
-              {count.toLocaleString()} Reviews
-            </a>
-          </div>
+          {tag && (
+            <span className="pdp-badge-pill" data-tone={tag.modifier}>
+              {tag.label === 'Trending' ? 'Best Seller' : tag.label}
+            </span>
+          )}
 
-          <p className="pdp-price">K {product.price.toLocaleString()}</p>
-          <p className="pdp-description">{product.description}</p>
+          <p className="pdp-description">
+            {visibleDescription}
+            {isLong && (
+              <button
+                type="button"
+                className="pdp-readmore"
+                onClick={() => setExpanded((v) => !v)}
+                aria-expanded={expanded}
+              >
+                {expanded ? 'read less' : 'read more'}
+              </button>
+            )}
+          </p>
 
           {requiresSize && (
             <SizeSelector
@@ -312,31 +332,39 @@ export default function ProductClient({ product, relatedProducts }: ProductClien
             />
           )}
 
-          <div className="pdp-qty-row">
+          <div className="pdp-buybar">
+            <span className="pdp-price-pill">K {product.price.toLocaleString()}</span>
             <div className="pdp-qty" role="group" aria-label="Quantity">
               <button type="button" className="pdp-qty-btn" aria-label="Decrease quantity" disabled={quantity <= 1} onClick={() => setQuantity((q) => Math.max(1, q - 1))}>
                 <Minus size={15} strokeWidth={2.5} />
               </button>
-              <span className="pdp-qty-value" aria-live="polite">{quantity}</span>
+              <span className="pdp-qty-value" aria-live="polite">{String(quantity).padStart(2, '0')}</span>
               <button type="button" className="pdp-qty-btn" aria-label="Increase quantity" disabled={quantity >= 9} onClick={() => setQuantity((q) => Math.min(9, q + 1))}>
                 <Plus size={15} strokeWidth={2.5} />
               </button>
             </div>
-            <p className="pdp-shipping">
-              <Truck size={16} strokeWidth={2} aria-hidden="true" />
-              <span>Fast delivery, pay on arrival</span>
-            </p>
-          </div>
-
-          <div className="pdp-actions">
-            <button type="button" className="btn btn-primary pdp-cta" disabled={soldOut} onClick={handleAdd}>
-              <ShoppingBag size={17} strokeWidth={2} />
-              <span>{soldOut ? 'Sold Out' : 'Add to Cart'}</span>
+            <button
+              type="button"
+              className="pdp-cart-fab"
+              disabled={soldOut}
+              onClick={handleAdd}
+              aria-label={soldOut ? 'Sold out' : `Add ${product.name} to bag`}
+            >
+              <ShoppingBag size={19} strokeWidth={2} />
             </button>
-            <button type="button" className="btn btn-secondary pdp-cta" disabled={soldOut} onClick={handleBuyNow}>
+          </div>
+          {!soldOut && (
+            <button type="button" className="btn btn-secondary pdp-cta" onClick={handleBuyNow}>
               <span>Buy Now</span>
             </button>
-          </div>
+          )}
+          {soldOut && (
+            <p className="pdp-review-error" role="status">Sold out — check stock below or try another size.</p>
+          )}
+          <p className="pdp-shipping">
+            <Truck size={16} strokeWidth={2} aria-hidden="true" />
+            <span>Fast delivery, pay on arrival</span>
+          </p>
 
           <div className="pdp-trust">
             {[
@@ -353,81 +381,195 @@ export default function ProductClient({ product, relatedProducts }: ProductClien
           </div>
 
           <div className="pdp-stock">
-            <StockInfo stockByStore={product.stockByStore} />
+            <StockInfo
+              stockByStore={product.stockByStore}
+              searchable
+              query={storeQuery}
+              onQueryChange={setStoreQuery}
+              onStoreClick={(storeName) => {
+                saveDefaultStore(storeName);
+                setStoreQuery(storeName);
+              }}
+            />
           </div>
         </div>
       </div>
 
-      <section className="pdp-section">
-        <h2 className="pdp-section-title pdp-section-title-center">Why {product.name}?</h2>
-        <div className="pdp-why">
-          {[
-            { Icon: Award, title: 'Premium Quality', text: 'Hand-picked fabrics and finishes that survive everyday wear and washing.' },
-            { Icon: Zap, title: 'Fast Delivery', text: 'Same-week delivery in Lusaka and countrywide shipping to your door.' },
-            { Icon: RotateCcw, title: 'Easy Returns', text: '7-day exchanges and refunds. No stories, no stress — just BEILO.' },
-          ].map(({ Icon, title, text }) => (
-            <div key={title} className="pdp-why-item">
-              <span className="pdp-why-icon">
-                <Icon size={20} strokeWidth={2} aria-hidden="true" />
-              </span>
-              <div>
-                <h3 className="pdp-why-title">{title}</h3>
-                <p className="pdp-why-text">{text}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       <section className="pdp-section" id="pdp-reviews">
         <h2 className="pdp-section-title">Customer Reviews</h2>
         <div className="pdp-reviews">
-          {[
-            { initials: 'CM', name: 'Chanda M.', title: 'Great fit, quality fabric!' },
-            { initials: 'MK', name: 'Mwila K.', title: 'Arrived fast, love it!' },
-            { initials: 'TN', name: 'Tendai N.', title: 'True to size, will buy again!' },
-          ].map((review) => (
-            <article key={review.name} className="pdp-review">
-              <div className="pdp-review-head">
-                <span className="pdp-review-avatar" aria-hidden="true">{review.initials}</span>
-                <div>
-                  <Stars rating={5} size={13} />
-                  <p className="pdp-review-name">{review.name}</p>
+          {userReviews.length === 0 ? (
+            <p className="pdp-reviews-empty">
+              No reviews yet — be the first to tell the next shopper how it fits.
+            </p>
+          ) : (
+            userReviews.map((review) => (
+              <article key={review.id} className="pdp-review">
+                <div className="pdp-review-head">
+                  <span className="pdp-review-avatar" aria-hidden="true">
+                    {review.name.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()}
+                  </span>
+                  <div>
+                    <Stars rating={review.rating} size={13} />
+                    <p className="pdp-review-name">
+                      {review.name}{' '}
+                      {review.verified && (
+                        <span className="pdp-review-verified">
+                          · Verified order
+                        </span>
+                      )}
+                    </p>
+                  </div>
                 </div>
+                <p className="pdp-review-title">{review.title}</p>
+              </article>
+            ))
+          )}
+        </div>
+
+        <div className="pdp-review-cta">
+          <div>
+            <h3 className="pdp-review-cta-title">Wore it? Rate it.</h3>
+            <p className="pdp-review-cta-text">
+              Tell the next shopper how {product.name} fits. Reviews are checked against real
+              orders before they get the verified badge.
+            </p>
+            {verifiedBuyer && (
+              <span className="pdp-review-cta-badge">
+                <Star size={12} strokeWidth={2.5} fill="currentColor" aria-hidden="true" />
+                Verified buyer — your review gets the badge
+              </span>
+            )}
+          </div>
+
+          <form
+            className="pdp-review-form"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (reviewTitle.trim().length < 3) {
+                setReviewError('Please write a short review (min 3 characters).');
+                return;
+              }
+              if (posting) return;
+              setPosting(true);
+              setReviewError('');
+              setPosted(false);
+              try {
+                const { review, summary } = await submitReview({
+                  productId: product.id,
+                  name: reviewName,
+                  title: reviewTitle,
+                  rating: reviewRating,
+                  phone: getProfile().phone || undefined,
+                });
+                setUserReviews((prev) =>
+                  prev.some((r) => r.id === review.id) ? prev : [review, ...prev]
+                );
+                setRating(summary);
+                if (review.verified) setVerifiedBuyer(true);
+                setReviewTitle('');
+                setPosted(true);
+              } catch (err) {
+                setReviewError(
+                  err instanceof Error && err.message
+                    ? err.message
+                    : 'Could not save your review. Please try again.'
+                );
+              } finally {
+                setPosting(false);
+              }
+            }}
+          >
+            <div className="pdp-field">
+              <span id="pdp-rate-label" className="pdp-review-cta-text" style={{ fontWeight: 700 }}>
+                Your rating
+              </span>
+              <div className="pdp-stars-input" role="radiogroup" aria-labelledby="pdp-rate-label">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    role="radio"
+                    aria-checked={reviewRating === n}
+                    aria-label={`${n} star${n === 1 ? '' : 's'}`}
+                    className={`pdp-star-btn ${reviewRating >= n ? 'is-active' : ''}`}
+                    onClick={() => setReviewRating(n)}
+                  >
+                    <Star
+                      size={20}
+                      strokeWidth={2}
+                      fill={reviewRating >= n ? 'currentColor' : 'none'}
+                      aria-hidden="true"
+                    />
+                  </button>
+                ))}
+                <span className="pdp-review-cta-text" aria-live="polite">{reviewRating}.0 / 5</span>
               </div>
-              <p className="pdp-review-title">{review.title}</p>
-            </article>
-          ))}
+            </div>
+
+            <div className="pdp-field">
+              <label htmlFor="pdp-review-name">Name</label>
+              <input
+                id="pdp-review-name"
+                placeholder="e.g. Chanda"
+                value={reviewName}
+                onChange={(e) => { setReviewName(e.target.value); setPosted(false); }}
+                autoComplete="name"
+              />
+            </div>
+
+            <div className="pdp-field">
+              <label htmlFor="pdp-review-text">Review</label>
+              <textarea
+                id="pdp-review-text"
+                placeholder={`How does ${product.name} fit? True to size?`}
+                value={reviewTitle}
+                onChange={(e) => { setReviewTitle(e.target.value); setReviewError(''); setPosted(false); }}
+              />
+            </div>
+
+            {reviewError && <p className="pdp-review-error" role="alert">{reviewError}</p>}
+            {posted && !reviewError && <p className="pdp-review-success" role="status">Thanks! Your review is live below.</p>}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <button type="submit" className="btn btn-primary" disabled={posting}>
+                {posting ? 'Posting…' : 'Post review'}
+              </button>
+              <span className="pdp-review-hint">No account needed</span>
+            </div>
+          </form>
         </div>
       </section>
 
-      <section className="pdp-section pdp-faq">
-        <h2 className="pdp-section-title">Frequently Asked Questions</h2>
-        <Accordion
-          items={[
-            {
-              question: 'How fast is delivery?',
-              answer: 'We deliver within Lusaka in 1–2 working days and countrywide in 2–5 working days. Delivery fees are confirmed at checkout.',
-            },
-            {
-              question: 'What is your return policy?',
-              answer: 'Changed your mind? Return unworn items with tags within 7 days for an exchange or refund. Need help? Chat to us on WhatsApp.',
-            },
-            {
-              question: `How does ${product.name} fit?`,
-              answer: 'Our fits run true to size. If you are between sizes, we recommend sizing up for a relaxed fit. Check the size guide on each size for measurements.',
-            },
-            {
-              question: 'Can I pick up in store?',
-              answer: 'Yes. Choose pickup at checkout and collect from any of our 5 stores — Lusaka, Ndola or Kitwe. We will message you when your order is ready.',
-            },
-            {
-              question: 'How do I pay?',
-              answer: 'We accept mobile money and pay on delivery in selected areas. All payments are confirmed before dispatch.',
-            },
-          ]}
-        />
-      </section>
+      {completeLookProducts.length > 0 && (
+        <section className="pdp-section">
+          <div className="pdp-related-head">
+            <div>
+              <h2 className="pdp-section-title">Complete the look</h2>
+              <p className="pdp-description">Styled with {product.name} — add the full outfit in one tap.</p>
+            </div>
+            <div className="pdp-related-nav">
+              <button type="button" className="btn btn-secondary" onClick={handleAddAllLook}>
+                <ShoppingBag size={16} strokeWidth={2} />
+                <span>Add all to bag</span>
+              </button>
+              <button type="button" className="pdp-arrow" aria-label="Scroll complete the look left" onClick={() => scrollLook(-1)}>
+                <ChevronLeft size={18} strokeWidth={2} />
+              </button>
+              <button type="button" className="pdp-arrow" aria-label="Scroll complete the look right" onClick={() => scrollLook(1)}>
+                <ChevronRight size={18} strokeWidth={2} />
+              </button>
+            </div>
+          </div>
+          <div className="pdp-related-track" ref={lookRef}>
+            {completeLookProducts.map((item) => (
+              <div key={item.id} className="pdp-related-card">
+                <ProductCard product={item} onAddToCart={handleRelatedAdd} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {relatedProducts.length > 0 && (
         <section className="pdp-section">
