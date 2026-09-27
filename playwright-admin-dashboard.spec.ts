@@ -1,10 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { test, type Page } from '@playwright/test';
 
 const ADMIN_EMAIL = 'test@beilo.store';
 const ADMIN_PASSWORD = 'test123456';
 const BASE_URL = 'http://localhost:3000';
 
-async function login(page) {
+async function login(page: Page) {
   await page.goto(`${BASE_URL}/admin/login`);
   await page.fill('#admin-email', ADMIN_EMAIL);
   await page.fill('#admin-password', ADMIN_PASSWORD);
@@ -13,7 +13,7 @@ async function login(page) {
   await page.waitForSelector('.admin-dashboard', { timeout: 10000 });
 }
 
-async function testViewport(page, width, height, label) {
+async function testViewport(page: Page, width: number, height: number, label: string) {
   await page.setViewportSize({ width, height });
   await page.waitForTimeout(500); // allow reflow
   
