@@ -19,6 +19,26 @@ export default async function HomePage() {
 
   const mapped = mapProducts(products ?? []);
 
+  // Resolve an editorial look product to the live catalogue entry so
+  // prices are never stale and cards link to the real product page.
+  // Returns null when the product no longer exists (dropped from UI).
+  const lookProduct = (name: string) => {
+    const match = mapped.find(
+      (p) => p.name.trim().toLowerCase() === name.trim().toLowerCase()
+    );
+    if (!match) return null;
+    return {
+      name: match.name,
+      slug: match.slug,
+      price: match.salePrice ?? match.price,
+      image: match.images[0] || '/products/cozy.jpeg',
+    };
+  };
+  const lookProducts = (names: string[]) =>
+    names
+      .map(lookProduct)
+      .filter((p): p is NonNullable<typeof p> => p !== null);
+
   // Homepage CMS blocks (announcements render in the top bar)
   const { data: blocks } = await supabase
     .from('homepage_blocks')
@@ -44,10 +64,6 @@ export default async function HomePage() {
     })),
   }));
 
-  const mensProducts = mapped.filter(p => p.category === 'Men');
-  const womensProducts = mapped.filter(p => p.category === 'Women');
-  const denimProducts = mapped.filter(p => p.category === 'Denim');
-
   const looks = [
     {
       id: '1',
@@ -57,7 +73,7 @@ export default async function HomePage() {
       image: '/products/beliloimg.avif',
       href: '/shop?category=Men',
       align: 'left' as const,
-      products: mensProducts.slice(0, 5).map(p => ({ name: p.name, price: p.price, image: p.images[0] })),
+      products: lookProducts(['Skull T shirt', 'T-shirt', 'Shirt']),
     },
     {
       id: '2',
@@ -67,7 +83,7 @@ export default async function HomePage() {
       image: '/products/cozy.jpeg',
       href: '/shop?category=Women',
       align: 'right' as const,
-      products: womensProducts.slice(0, 5).map(p => ({ name: p.name, price: p.price, image: p.images[0] })),
+      products: lookProducts(['Female t from kens store', 'Long sleeved T shirt']),
     },
     {
       id: '3',
@@ -77,16 +93,25 @@ export default async function HomePage() {
       image: '/products/Wednesday.jpeg',
       href: '/shop?category=Denim',
       align: 'left' as const,
-      products: denimProducts.slice(0, 5).map(p => ({ name: p.name, price: p.price, image: p.images[0] })),
+      products: lookProducts(['Flannel', 'Shoes']),
     },
   ];
 
-  const categoryBlocks = cmsCategoryBlocks.length > 0 ? cmsCategoryBlocks : [
-    { id: 'deals', title: 'Deals under K 3,500', href: '/shop?maxPrice=3500', items: [{ label: 'Hoodies', image: '/categories/hoodies/hoodie.jpeg' }, { label: 'Tees', image: '/categories/tees/shirt.jpg' }, { label: 'Caps', image: '/categories/caps/cap.jpeg' }, { label: 'Sneakers', image: '/categories/sneekers/shoe.jpeg' }] },
-    { id: 'trending', title: 'Trending now', href: '/shop?sort=trending', items: [{ label: 'Denim', image: '/categories/denim/Jeans.jpeg' }, { label: 'Cargo', image: '/categories/cargo/166492517477861535.jpeg' }, { label: 'Headwear', image: '/categories/caps/cap.jpeg' }, { label: 'Basics', image: '/categories/basics/7318418141817825.jpeg' }] },
-    { id: 'men', title: 'Shop Men', href: '/shop?category=Men', items: [{ label: 'Jackets', image: '/categories/denim/Jeans.jpeg' }, { label: 'Pants', image: '/categories/cargo/166492517477861535.jpeg' }, { label: 'Footwear', image: '/categories/sneekers/shoe.jpeg' }, { label: 'Accessories', image: '/categories/caps/cap.jpeg' }] },
-    { id: 'women', title: 'Shop Women', href: '/shop?category=Women', items: [{ label: 'Tops', image: '/categories/tees/shirt.jpg' }, { label: 'Denim', image: '/categories/denim/Jeans.jpeg' }, { label: 'Hoodies', image: '/categories/hoodies/hoodie.jpeg' }, { label: 'Hats', image: '/categories/caps/cap.jpeg' }] },
+  // Fallback categories mirror the REAL catalogue categories (each
+  // linking to itself) so no dead-end labels like Cargo/Basics appear.
+  const REAL_CATEGORIES = [
+    { label: 'Men', image: '/categories/tees/shirt.jpg' },
+    { label: 'Women', image: '/categories/hoodies/hoodie.jpeg' },
+    { label: 'Footwear', image: '/categories/sneekers/shoe.jpeg' },
+    { label: 'Headwear', image: '/categories/caps/cap.jpeg' },
+    { label: 'Denim', image: '/categories/denim/Jeans.jpeg' },
   ];
+  const categoryBlocks = cmsCategoryBlocks.length > 0 ? cmsCategoryBlocks : REAL_CATEGORIES.map((c, i) => ({
+    id: `fallback-${i}`,
+    title: `Shop ${c.label}`,
+    href: `/shop?category=${c.label}`,
+    items: [{ label: c.label, image: c.image }],
+  }));
 
   // Deals for you: real discounted products (sale price below
   // regular price), newest first, capped at 8.
@@ -101,17 +126,6 @@ export default async function HomePage() {
       originalPrice: p.price,
       image: p.images[0] || '/products/cozy.jpeg',
     }));
-
-  const socialStats = {
-    source: 'Facebook',
-    sourceHandle: '@beilo.store',
-    href: 'https://facebook.com',
-    heading: 'Join our community',
-    stats: [
-      { id: 'followers', value: '98K', label: 'Followers' },
-      { id: 'posts', value: '4.3K', label: 'Posts' },
-    ],
-  };
 
   // Carousel slides: every active CMS hero block, falling back to the
   // editorial looks so the hero never renders empty.
@@ -151,7 +165,6 @@ export default async function HomePage() {
         looks={usingLooksFallback ? [] : looks}
         categoryBlocks={categoryBlocks}
         dealProducts={dealProducts}
-        socialStats={socialStats}
       />
     </>
   );

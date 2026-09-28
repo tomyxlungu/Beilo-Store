@@ -1198,6 +1198,64 @@ textarea {
   color: var(--charcoal-noir);
 }
 
+/* ---------- Home trust strip (real service promises) ---------- */
+.home-trust {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--charcoal-noir);
+  color: var(--canvas);
+  border-radius: var(--radius-lg);
+}
+
+.home-trust-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.home-trust-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--canvas);
+}
+
+.home-trust-title {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--canvas);
+}
+
+.home-trust-text {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--moonlit-silver);
+  margin-top: 2px;
+  line-height: 1.45;
+}
+
+@media (max-width: 1023px) and (min-width: 640px) {
+  .home-trust {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 639px) {
+  .home-trust {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    padding: var(--space-md);
+  }
+}
+
 /* ---------- Social Proof (Facebook community) ---------- */
 .social-proof {
   display: flex;
@@ -4828,6 +4886,29 @@ textarea {
   flex: 0 0 200px;
   scroll-snap-align: start;
   min-width: 0;
+}
+
+@media (max-width: 639px) {
+  .pdp-related-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pdp-related-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .pdp-related-nav .btn {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  .pdp-related-nav .pdp-arrow {
+    flex-shrink: 0;
+  }
 }
 
 @media (min-width: 768px) {

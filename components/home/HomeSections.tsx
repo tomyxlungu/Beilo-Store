@@ -4,11 +4,12 @@
 import { useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, ChevronLeft, ChevronRight, Globe, Images, Users } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Store, Banknote, MessageCircle, RotateCcw } from 'lucide-react';
 import HeroCarousel, { type HeroSlide } from '@/components/home/HeroCarousel';
 
 interface LookProduct {
   name: string;
+  slug?: string;
   price: number;
   image: string;
 }
@@ -45,23 +46,23 @@ function discountPct(price: number, original?: number): number | null {
   return Math.round((1 - price / original) * 100);
 }
 
-interface SocialStats {
-  source: string;
-  sourceHandle: string;
-  href: string;
-  heading: string;
-  stats: { id: string; value: string; label: string; Icon?: any }[];
-}
-
 interface HomeSectionsProps {
   heroSlides: HeroSlide[];
   looks: Look[];
   categoryBlocks: CategoryBlock[];
   dealProducts: DealProduct[];
-  socialStats: SocialStats;
 }
 
-export default function HomeSections({ heroSlides, looks, categoryBlocks, dealProducts, socialStats }: HomeSectionsProps) {
+// Real service promises (all verifiable in-app) — replaces the
+// unverifiable follower-count block that linked to facebook.com.
+const TRUST_ITEMS = [
+  { icon: Store, title: 'Pickup in store', text: 'Free pickup at any BEILO store' },
+  { icon: Banknote, title: 'Pay on delivery', text: 'Cash or mobile money, no prepay' },
+  { icon: MessageCircle, title: 'WhatsApp support', text: 'Real humans, Mon–Sat 08:00–20:00' },
+  { icon: RotateCcw, title: '7-day returns', text: 'Changed your mind? No stress' },
+];
+
+export default function HomeSections({ heroSlides, looks, categoryBlocks, dealProducts }: HomeSectionsProps) {
   const catsRef = useRef<HTMLDivElement>(null);
   const dealsRef = useRef<HTMLDivElement>(null);
 
@@ -91,59 +92,6 @@ export default function HomeSections({ heroSlides, looks, categoryBlocks, dealPr
   return (
     <div className="home-sections">
       <HeroCarousel slides={heroSlides} />
-      {looks.map((look) => (
-        <section key={look.id} className="look-section">
-          <div className="look-section-bg">
-            <Image src={look.image} alt={look.title} fill sizes="100vw" className="look-section-bg-img" priority={look.id === '1'} />
-            <div className="look-section-bg-overlay" />
-          </div>
-          <div className={`look-section-content ${look.align === 'right' ? 'look-section-content--reverse' : ''}`}>
-            <div className="look-section-text">
-              <p className="look-section-label">{look.label}</p>
-              <h2 className="look-section-title">{look.title}</h2>
-              <p className="look-section-desc">{look.description}</p>
-              <Link href={look.href} className="look-section-cta">SHOP THE LOOK <span className="look-section-cta-arrow">→</span></Link>
-            </div>
-            <div className="look-section-products">
-              {look.products.map((product) => (
-                <Link key={product.name} href={`/shop?search=${encodeURIComponent(product.name)}`} className="look-product-card">
-                  <div className="look-product-card-img">
-                    <Image src={product.image} alt={product.name} fill sizes="120px" className="object-cover" />
-                  </div>
-                  <p className="look-product-card-name">{product.name}</p>
-                  <p className="look-product-card-price">K{product.price}</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      ))}
-
-      <section className="home-section">
-        <div className="social-proof">
-          <div className="social-proof-brand">
-            <span className="social-proof-icon"><Globe size={20} strokeWidth={2} /></span>
-            <div>
-              <p className="social-proof-heading">{socialStats.heading}</p>
-              <p className="social-proof-sub">{socialStats.source} · {socialStats.sourceHandle}</p>
-            </div>
-          </div>
-          <div className="social-proof-stats">
-            {socialStats.stats.map(({ id, value, label, Icon }) => (
-              <div key={id} className="social-proof-stat">
-                <span className="social-proof-stat-icon">
-                  {Icon ? <Icon size={16} strokeWidth={2} /> : <Users size={16} strokeWidth={2} />}
-                </span>
-                <span className="social-proof-stat-value">{value}</span>
-                <span className="social-proof-stat-label">{label}</span>
-              </div>
-            ))}
-          </div>
-          <a href={socialStats.href} target="_blank" rel="noopener noreferrer" className="btn btn-secondary social-proof-cta">
-            Follow us <ArrowRight size={16} strokeWidth={2.5} />
-          </a>
-        </div>
-      </section>
 
       {categoryCards.length > 0 && (
         <section className="home-section" aria-labelledby="shop-by-category-heading">
@@ -218,6 +166,54 @@ export default function HomeSections({ heroSlides, looks, categoryBlocks, dealPr
           </div>
         </section>
       )}
+
+      {looks.map((look) => (
+        <section key={look.id} className="look-section">
+          <div className="look-section-bg">
+            <Image src={look.image} alt={look.title} fill sizes="100vw" className="look-section-bg-img" priority={look.id === '1'} />
+            <div className="look-section-bg-overlay" />
+          </div>
+          <div className={`look-section-content ${look.align === 'right' ? 'look-section-content--reverse' : ''}`}>
+            <div className="look-section-text">
+              <p className="look-section-label">{look.label}</p>
+              <h2 className="look-section-title">{look.title}</h2>
+              <p className="look-section-desc">{look.description}</p>
+              <Link href={look.href} className="look-section-cta">SHOP THE LOOK <span className="look-section-cta-arrow">→</span></Link>
+            </div>
+            <div className="look-section-products">
+              {look.products.map((product) => (
+                <Link
+                  key={product.name}
+                  href={product.slug ? `/product/${product.slug}` : `/shop?search=${encodeURIComponent(product.name)}`}
+                  className="look-product-card"
+                >
+                  <div className="look-product-card-img">
+                    <Image src={product.image} alt={product.name} fill sizes="120px" className="object-cover" />
+                  </div>
+                  <p className="look-product-card-name">{product.name}</p>
+                  <p className="look-product-card-price">K {product.price.toLocaleString()}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      ))}
+
+      <section className="home-section" aria-label="Why shop with BEILO">
+        <div className="home-trust">
+          {TRUST_ITEMS.map(({ icon: Icon, title, text }) => (
+            <div key={title} className="home-trust-item">
+              <span className="home-trust-icon">
+                <Icon size={20} strokeWidth={2} aria-hidden="true" />
+              </span>
+              <div>
+                <p className="home-trust-title">{title}</p>
+                <p className="home-trust-text">{text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
