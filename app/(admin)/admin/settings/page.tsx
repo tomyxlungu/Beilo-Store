@@ -8,6 +8,8 @@ export default function AdminSettings() {
   const [storeName, setStoreName] = useState('BEILO');
   const [storeDescription, setStoreDescription] = useState('Zambia\'s online fashion destination');
   const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [headerAnnouncement, setHeaderAnnouncement] = useState('');
+  const [headerAnnouncementHref, setHeaderAnnouncementHref] = useState('/shop');
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [saved, setSaved] = useState(false);
@@ -34,6 +36,8 @@ export default function AdminSettings() {
           if (s.store_name) setStoreName(typeof s.store_name === 'string' ? s.store_name : s.store_name.value ?? 'BEILO');
           if (s.store_description) setStoreDescription(typeof s.store_description === 'string' ? s.store_description : s.store_description.value ?? '');
           if (s.whatsapp_number) setWhatsappNumber(typeof s.whatsapp_number === 'string' ? s.whatsapp_number : s.whatsapp_number.value ?? '');
+          if (s.header_announcement) setHeaderAnnouncement(typeof s.header_announcement === 'string' ? s.header_announcement : s.header_announcement.value ?? '');
+          if (s.header_announcement_href) setHeaderAnnouncementHref(typeof s.header_announcement_href === 'string' ? s.header_announcement_href : s.header_announcement_href.value ?? '/shop');
         }
       } catch (err) {
         console.error('Failed to load settings:', err);
@@ -71,6 +75,8 @@ export default function AdminSettings() {
       await saveSetting('store_name', storeName);
       await saveSetting('store_description', storeDescription);
       await saveSetting('whatsapp_number', whatsappNumber);
+      await saveSetting('header_announcement', headerAnnouncement);
+      await saveSetting('header_announcement_href', headerAnnouncementHref || '/shop');
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: any) {
@@ -150,6 +156,34 @@ export default function AdminSettings() {
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWhatsappNumber(e.target.value)}
                 />
                 <span className="m3-field-hint">Customers check out through this number.</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="admin-section" style={{ marginBottom: '16px' }}>
+            <div className="admin-section-header">
+              <span className="admin-section-icon"><Globe size={20} strokeWidth={2} /></span>
+              <h2>Header announcement</h2>
+            </div>
+            <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="m3-field">
+                <label htmlFor="settings-announcement">Announcement text</label>
+                <input
+                  id="settings-announcement"
+                  placeholder="e.g. New season just dropped — shop new arrivals"
+                  value={headerAnnouncement}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHeaderAnnouncement(e.target.value)}
+                />
+                <span className="m3-field-hint">Shown in the top bar. Leave empty to use the rotating Homepage announcements instead.</span>
+              </div>
+              <div className="m3-field">
+                <label htmlFor="settings-announcement-href">Announcement link</label>
+                <input
+                  id="settings-announcement-href"
+                  placeholder="/shop"
+                  value={headerAnnouncementHref}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHeaderAnnouncementHref(e.target.value)}
+                />
               </div>
             </div>
           </div>

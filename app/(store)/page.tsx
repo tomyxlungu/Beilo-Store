@@ -9,13 +9,21 @@ import Link from 'next/link';
 export default async function HomePage() {
   const supabase = await createServerSupabase();
 
-  // Fetch products for looks (join category name)
-  const { data: products } = await supabase
-    .from('products')
-    .select(PRODUCT_SELECT_SIMPLE)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(20);
+  // Fetch catalogue + CMS blocks in parallel so one slow query
+  // never gates the other.
+  const [{ data: products }, { data: blocks }] = await Promise.all([
+    supabase
+      .from('products')
+      .select(PRODUCT_SELECT_SIMPLE)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(20),
+    supabase
+      .from('homepage_blocks')
+      .select('type, title, content, sort_order')
+      .eq('active', true)
+      .order('sort_order'),
+  ]);
 
   const mapped = mapProducts(products ?? []);
 
@@ -40,11 +48,7 @@ export default async function HomePage() {
       .filter((p): p is NonNullable<typeof p> => p !== null);
 
   // Homepage CMS blocks (announcements render in the top bar)
-  const { data: blocks } = await supabase
-    .from('homepage_blocks')
-    .select('type, title, content, sort_order')
-    .eq('active', true)
-    .order('sort_order');
+  // (fetched above in parallel with products)
 
   const heroBlocks = (blocks ?? []).filter((b: any) => b.type === 'hero');
 

@@ -24,7 +24,6 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import SegmentedControl from '@/components/ui/SegmentedControl';
 
-const BEILO_WHATSAPP = '260971234567';
 const DELIVERY_FEE = 50;
 
 type DeliveryMethod = 'pickup' | 'delivery';
@@ -47,9 +46,15 @@ interface SentSummary {
 
 interface CheckoutClientProps {
   initialStores: Store[];
+  whatsappNumber?: string;
+  storeName?: string;
 }
 
-export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
+export default function CheckoutClient({
+  initialStores,
+  whatsappNumber = '260971234567',
+  storeName = 'BEILO',
+}: CheckoutClientProps) {
   const router = useRouter();
   const { items, totalItems, totalPrice, clearCart } = useCart();
 
@@ -162,19 +167,22 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
       image: item.image,
     }));
 
-    const message = generateWhatsAppMessage({
-      items: orderItems,
-      subtotal: totalPrice,
-      deliveryFee,
-      total,
-      customerName: customerName.trim(),
-      customerPhone: customerPhone.trim(),
-      deliveryMethod,
-      pickupStore: deliveryMethod === 'pickup' ? selectedStore?.name : undefined,
-      deliveryAddress: deliveryMethod === 'delivery' ? deliveryAddress.trim() : undefined,
-      storePromo: deliveryMethod === 'pickup' ? storePromo?.label : undefined,
-      readyTime: eta.label,
-    });
+    const message = generateWhatsAppMessage(
+      {
+        items: orderItems,
+        subtotal: totalPrice,
+        deliveryFee,
+        total,
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        deliveryMethod,
+        pickupStore: deliveryMethod === 'pickup' ? selectedStore?.name : undefined,
+        deliveryAddress: deliveryMethod === 'delivery' ? deliveryAddress.trim() : undefined,
+        storePromo: deliveryMethod === 'pickup' ? storePromo?.label : undefined,
+        readyTime: eta.label,
+      },
+      storeName
+    );
 
     setSending(true);
     setSendError('');
@@ -193,7 +201,7 @@ export default function CheckoutClient({ initialStores }: CheckoutClientProps) {
         deliveryAddress: deliveryMethod === 'delivery' ? deliveryAddress.trim() : undefined,
       });
 
-      const url = buildWhatsAppUrl(BEILO_WHATSAPP, message);
+      const url = buildWhatsAppUrl(whatsappNumber, message);
       if (popup && !popup.closed) {
         popup.location.href = url;
       } else {

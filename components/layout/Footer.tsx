@@ -56,9 +56,6 @@ function TwitterIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-const WHATSAPP_NUMBER = '260971234567';
-const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=Hi%20BEILO%2C%20I%20need%20some%20help.`;
-
 const shopLinks = [
   { label: 'Shop All', href: '/shop' },
   { label: 'New Arrivals', href: '/shop?new=true' },
@@ -84,9 +81,18 @@ const socials = [
   { label: 'Twitter', href: 'https://twitter.com', Icon: TwitterIcon },
 ];
 
-export default function Footer() {
+export default function Footer({
+  storeName = 'BEILO',
+  storeDescription = 'Fresh denim, essentials and streetwear for every day in Zambia.',
+  whatsappNumber = '260971234567',
+}: {
+  storeName?: string;
+  storeDescription?: string;
+  whatsappNumber?: string;
+}) {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hi ${storeName}, I need some help.`)}`;
 
   const handleSubscribe = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -102,7 +108,7 @@ export default function Footer() {
         {/* Newsletter band */}
         <div className="footer-newsletter">
           <div className="footer-newsletter-copy">
-            <h2 className="footer-newsletter-title">Join BEILO</h2>
+            <h2 className="footer-newsletter-title">Join {storeName}</h2>
             <p className="footer-newsletter-text">
               New drops, promos and store updates. No spam, just heat.
             </p>
@@ -144,17 +150,16 @@ export default function Footer() {
             <Link
               href="/"
               className="footer-logo"
-              aria-label="BEILO home"
+              aria-label={`${storeName} home`}
             >
               <span className="footer-logo-mark">
                 <ShoppingBag size={26} strokeWidth={2.5} />
               </span>
-              <span>BEILO</span>
+              <span>{storeName}</span>
             </Link>
 
             <p className="footer-tagline">
-              Fresh denim, essentials and streetwear for every day in
-              Zambia.
+              {storeDescription}
             </p>
 
             <p className="footer-location">
@@ -170,7 +175,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="footer-social"
-                  aria-label={`BEILO on ${label}`}
+                  aria-label={`${storeName} on ${label}`}
                 >
                   <Icon size={18} />
                 </a>
@@ -211,9 +216,9 @@ export default function Footer() {
             <h3 className="footer-heading">Talk to us</h3>
             <ul className="footer-contact">
               <li>
-                <a href={`tel:+${WHATSAPP_NUMBER}`}>
+                <a href={`tel:+${whatsappNumber}`}>
                   <Phone size={16} strokeWidth={2} aria-hidden="true" />
-                  <span>+260 97 123 4567</span>
+                  <span>+{whatsappNumber}</span>
                 </a>
               </li>
               <li>
@@ -229,7 +234,7 @@ export default function Footer() {
             </ul>
 
             <a
-              href={WHATSAPP_LINK}
+              href={whatsappLink}
               target="_blank"
               rel="noopener noreferrer"
               className="footer-whatsapp"
@@ -245,7 +250,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="footer-bottom">
           <p className="footer-copy">
-            © {new Date().getFullYear()} BEILO. All rights reserved.
+            © {new Date().getFullYear()} {storeName}. All rights reserved.
           </p>
           <p className="footer-payment">
             Pay on delivery &amp; mobile money accepted

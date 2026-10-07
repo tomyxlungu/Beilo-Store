@@ -53,7 +53,17 @@ const navigation = [
   },
 ];
 
-export default function Header() {
+export default function Header({
+  storeName = 'BEILO',
+  whatsappNumber = '260971234567',
+  announcementText = '',
+  announcementHref = '/shop',
+}: {
+  storeName?: string;
+  whatsappNumber?: string;
+  announcementText?: string;
+  announcementHref?: string;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -176,7 +186,7 @@ export default function Header() {
 
   return (
     <>
-      <AnnouncementBar />
+      <AnnouncementBar fixedText={announcementText} fixedHref={announcementHref} />
 
       <header
         className={`sticky-header ${
@@ -220,7 +230,7 @@ export default function Header() {
           <Link
             href="/"
             className="header-logo"
-            aria-label="BEILO home"
+            aria-label={`${storeName} home`}
             onClick={closeAllMenus}
           >
             <span className="beilo-logo-mark">
@@ -230,7 +240,7 @@ export default function Header() {
               />
             </span>
 
-            <span>BEILO</span>
+            <span>{storeName}</span>
           </Link>
 
           {/* DESKTOP SEARCH */}
@@ -389,8 +399,8 @@ export default function Header() {
             {/* WHATSAPP */}
             <div className="hide-mobile">
               <WhatsAppButton
-                phoneNumber="260971234567"
-                message="Hi BEILO, I need some help."
+                phoneNumber={whatsappNumber}
+                message={`Hi ${storeName}, I need some help.`}
               />
             </div>
           </div>

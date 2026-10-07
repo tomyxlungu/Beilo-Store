@@ -19,11 +19,25 @@ const FALLBACK = [
   },
 ];
 
-export default function AnnouncementBar() {
-  const [messages, setMessages] = useState(FALLBACK);
+export default function AnnouncementBar({
+  fixedText = '',
+  fixedHref = '/shop',
+}: {
+  fixedText?: string;
+  fixedHref?: string;
+}) {
+  const [messages, setMessages] = useState(
+    fixedText ? [{ text: fixedText, href: fixedHref }] : FALLBACK
+  );
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
+    // A settings announcement overrides the CMS rotation entirely.
+    if (fixedText) {
+      setMessages([{ text: fixedText, href: fixedHref }]);
+      setIndex(0);
+      return;
+    }
     async function load() {
       try {
         const { data } = await supabase
@@ -45,7 +59,7 @@ export default function AnnouncementBar() {
       }
     }
     load();
-  }, []);
+  }, [fixedText, fixedHref]);
 
   useEffect(() => {
     if (messages.length < 2) return;

@@ -25,7 +25,8 @@ const formatK = (value: number) =>
   `K${Math.round(value).toLocaleString()}`;
 
 export function generateWhatsAppMessage(
-  order: WhatsAppOrder
+  order: WhatsAppOrder,
+  brand = 'BEILO'
 ): string {
   const itemList = order.items
     .map(
@@ -39,7 +40,7 @@ export function generateWhatsAppMessage(
     )
     .join('\n\n');
 
-  let message = `NEW ORDER - BEILO\n\n`;
+  let message = `NEW ORDER - ${brand}\n\n`;
 
   message += `Customer: ${order.customerName}\n`;
   message += `Phone: ${order.customerPhone}\n`;
